@@ -73,12 +73,17 @@ for (const file of files) {
       }
     }
 
-    // No remote assets: everything the extension renders ships with it.
-    const remoteAsset = line.match(/(?:src|href)\s*=\s*["']\s*(?:https?:)?\/\//i);
-    if (remoteAsset) {
-      const sameLineUrls = line.match(/(?:src|href)\s*=\s*["']\s*(https?:)?\/\/[^"']*/i);
-      report(file, lineNumber, 'remote asset', sameLineUrls ? sameLineUrls[0] : remoteAsset[0]);
+    // No remote assets: everything the extension renders ships with it. Only
+    // tags that *load* something count -- a plain <a href> to an allowlisted
+    // host is a link the user clicks, and the popup is required to carry one
+    // for rate attribution.
+    const loadsSomething = /<\s*(script|link|img|iframe|source|embed|object|video|audio|track)\b/i;
+    if (loadsSomething.test(line)) {
+      const remoteAsset = line.match(/(?:src|href)\s*=\s*["']\s*(?:https?:)?\/\/[^"']*/i);
+      if (remoteAsset) report(file, lineNumber, 'remote asset', remoteAsset[0]);
     }
+    const cssUrl = line.match(/url\(\s*["']?\s*(?:https?:)?\/\/[^)"']*/i);
+    if (cssUrl) report(file, lineNumber, 'remote asset', cssUrl[0]);
     if (/@import\s+(?:url\()?["']?\s*(?:https?:)?\/\//i.test(line)) {
       report(file, lineNumber, 'remote stylesheet', line.trim());
     }
