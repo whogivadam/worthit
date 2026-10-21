@@ -1,0 +1,23 @@
+# Changelog
+
+## 0.1.0 (2026-10-21)
+
+
+### Features
+
+* **calc:** add income and worktime conversion ([#28](https://github.com/whogivadam/worthit/issues/28)) ([da29101](https://github.com/whogivadam/worthit/commit/da291019adc7570ecadcc2c46bf88a2ed10d6dd8))
+* **overlay:** add inline price badges with mutation observer ([#31](https://github.com/whogivadam/worthit/issues/31)) ([3cce2ab](https://github.com/whogivadam/worthit/commit/3cce2ab41fd94667c65a6a694745283b74b225ae))
+* **parser:** add the currency table and price parser ([#26](https://github.com/whogivadam/worthit/issues/26)) ([270683c](https://github.com/whogivadam/worthit/commit/270683cef376fbc8b298fde1fc16e5d6da7dcb90))
+* **popup:** add settings, manual check, history and share ([#30](https://github.com/whogivadam/worthit/issues/30)) ([a738320](https://github.com/whogivadam/worthit/commit/a738320686ebbe8bb7537f8782476cfbfa23f8a3))
+* **rates:** add rate fetch, cache, fallbacks and background ([#29](https://github.com/whogivadam/worthit/issues/29)) ([4d8823b](https://github.com/whogivadam/worthit/commit/4d8823b0ccd3fb937c993e910cb29484c8156ff2))
+
+
+### Bug Fixes
+
+* **ci:** make the test script portable and update workflow pins ([#7](https://github.com/whogivadam/worthit/issues/7)) ([c4cf9b7](https://github.com/whogivadam/worthit/commit/c4cf9b7fd274558945876b95119aa9a560910835))
+
+
+### Documentation
+
+* **release:** add AMO metadata, icons and capture harness ([#32](https://github.com/whogivadam/worthit/issues/32)) ([92ec487](https://github.com/whogivadam/worthit/commit/92ec487b7dd89e0ca28dbe41530398cc8913142f))
+* **release:** add the captured AMO screenshots ([#34](https://github.com/whogivadam/worthit/issues/34)) ([c99a875](https://github.com/whogivadam/worthit/commit/c99a875f7507401ea21e3f6dda9e82348c90950b))
