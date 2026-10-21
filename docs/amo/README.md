@@ -50,14 +50,18 @@ before badges appear.
 
 ### 2. Use these settings, so the figures match the listing text
 
-- income: **monthly, 30000**
+- income: **monthly, 25000**
 - hours per week: **40**
 - home currency: **SEK**
 - badges: **on**
 
-That is an hourly rate of 173.08, so `1 299 kr` is `7h30m`. Press **REFRESH** once in the popup and
-wait for the rate line to show today's date, so the USD shop converts with live rates rather than the
-bundled snapshot.
+Use a round, obviously illustrative figure rather than your own income. The badges let anyone work
+the hourly rate back out of any price on the page, so a real salary in these screenshots is a real
+salary on a public listing page.
+
+25000 over a 40-hour week is an hourly rate of 144.23, so `1 299 kr` is `9 h 0 min` and its badge
+reads `1.1d`. Press **REFRESH** once in the popup and wait for the rate line to show the current
+date, so the USD shop converts with live rates rather than the bundled snapshot.
 
 ### 3. Set the window to exactly 1280 × 800
 
@@ -69,7 +73,7 @@ toolbar to save; it writes a PNG at exactly that size.
 
 | File | Page | What must be visible |
 | --- | --- | --- |
-| `01-popup-result.png` | popup, over `se-shop.html` | `1299` entered, the large `7 h 30 min`, "of your life", the framing line, the eight-block workday bar, and at least two history rows with the running total |
+| `01-popup-result.png` | popup, over `se-shop.html` | a price entered, the large `3 h 46 min`, "of your life", the framing line (`Half your workday`), the eight-block workday bar part-filled, COPY, and history rows with the running total |
 | `02-settings.png` | popup, SETTINGS | income mode, the monthly field filled in, hours per week, home currency, and the badges toggle |
 | `03-overlay-se.png` | `harness/se-shop.html` | the product grid with red badges on `18 999 kr`, `1 299 kr`, the split price, `499:-` and `2 499:99` — and visibly none on `RTX 4090` or the date in the footer |
 | `04-overlay-us.png` | `harness/us-shop.html` | the row list with badges on `$89.99`, `US$199.95`, `$1,249.00` and both ends of `$19 - $34`, showing USD converted into SEK |
@@ -79,5 +83,7 @@ For `05`, hover a badge on one of the shop pages first if you would rather show 
 price, converted price, hours, the rate used and the rate date — but the rate line in the popup footer
 is the one the listing needs.
 
-Save all five into this directory. Nothing here ships in the extension: `docs/` is excluded by
+Save all five into this directory, 1280 x 800 each. Responsive Design Mode on a HiDPI screen writes
+them at 2560 x 1602 even with DPR 1; scale and crop with
+`sips -Z 1280 shot.png && sips -c 800 1280 shot.png`. Nothing here ships in the extension: `docs/` is excluded by
 `web-ext-config.mjs`, and `npm run check-zip` fails if that ever stops being true.
