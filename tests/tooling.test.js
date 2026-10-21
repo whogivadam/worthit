@@ -233,3 +233,84 @@ test('the popup loads every library it uses, in dependency order', () => {
     'popup.js',
   ]);
 });
+
+test('a failed AMO submission can be retried without a new version', () => {
+  // The release job cannot retry itself: release-please runs first, sees the
+  // release already exists, returns release_created false, and every later step
+  // including the sign step is skipped. The dispatch path exists for that case.
+  const workflow = read('.github/workflows/release-please.yml');
+
+  assert.match(workflow, /^\s*workflow_dispatch:/m, 'expected a manual trigger');
+  assert.match(workflow, /inputs:\s*\n\s*tag:/, 'the manual trigger takes a tag');
+
+  // Each job must claim exactly one of the two triggers, or a dispatch would
+  // run release-please again.
+  assert.match(workflow, /release-please\n\s*if: github\.event_name == 'push'/);
+  assert.match(workflow, /resubmit\n\s*if: github\.event_name == 'workflow_dispatch'/);
+
+  // The retry has to verify the build the same way the release did.
+  const resubmit = workflow.slice(workflow.indexOf('  resubmit:'));
+  for (const step of ['npm test', 'npm run build', 'npm run check-zip', 'npm run check-privacy']) {
+    assert.ok(resubmit.includes(step), `the retry path must run ${step}`);
+  }
+  assert.ok(resubmit.indexOf('npm run check-privacy') < resubmit.indexOf('npm run sign'),
+    'the checks must run before signing');
+});
+
+test('AMO credentials come only from secrets, and only in the sign steps', () => {
+  const workflow = read('.github/workflows/release-please.yml');
+  const signSteps = workflow.split('npm run sign').length - 1;
+  assert.equal(signSteps, 2, 'one sign step on the release path, one on the retry path');
+
+  assert.equal(workflow.split('secrets.AMO_JWT_ISSUER').length - 1, 2);
+  assert.equal(workflow.split('secrets.AMO_JWT_SECRET').length - 1, 2);
+  // Nothing resembling a literal credential.
+  assert.doesNotMatch(workflow, /user:\d+:\d+/, 'an issuer must never be written into the workflow');
+});
+
+test('no workflow interpolates a value straight into a shell script', () => {
+  // A `${{ }}` written into a `run:` block is a script injection waiting to
+  // happen -- the workflow_dispatch tag is attacker-controllable in the general
+  // case. Values have to reach the shell through the environment. `ref:`,
+  // `env:` and `if:` are not shell, so they are untouched by this.
+  const workflows = fs
+    .readdirSync(path.join(root, '.github/workflows'))
+    .map((name) => ['.github/workflows/' + name, read('.github/workflows/' + name)]);
+
+  let checked = 0;
+  for (const [name, workflow] of workflows) {
+    const lines = workflow.split('\n');
+    for (let i = 0; i < lines.length; i += 1) {
+      const start_ = lines[i].match(/^(\s*)(?:-\s+)?run:(.*)$/);
+      if (!start_) continue;
+      checked += 1;
+
+      // Only a block scalar continues onto the following lines; a one-line
+      // `run: cmd` is just itself, and what follows is another YAML key.
+      const isBlock = /^\s*[|>]/.test(start_[2]);
+      const block = [lines[i]];
+      if (isBlock) {
+        const indent = lines[i].indexOf('run:');
+        for (let j = i + 1; j < lines.length; j += 1) {
+          if (lines[j].trim() === '') continue;
+          if (lines[j].match(/^\s*/)[0].length <= indent) break;
+          block.push(lines[j]);
+        }
+      }
+
+      const injected = block.join('\n').match(/\$\{\{[^}]*\}\}/g);
+      assert.equal(
+        injected,
+        null,
+        `${name}:${i + 1} interpolates ${injected} into a shell script; pass it through env instead`,
+      );
+    }
+  }
+  assert.ok(checked > 5, `expected to inspect several run blocks, saw ${checked}`);
+
+  // And the retry path passes its tag the right way.
+  assert.match(
+    read('.github/workflows/release-please.yml'),
+    /env:\s*\n\s*TAG: \$\{\{ inputs\.tag \}\}/,
+  );
+});

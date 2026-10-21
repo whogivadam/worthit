@@ -96,3 +96,14 @@ bumps the version in both `package.json` and `manifest.json`. Merging that pull 
 release, attaches the unsigned zip to the GitHub Release and submits the version to AMO for review.
 AMO credentials live only in the `AMO_JWT_ISSUER` and `AMO_JWT_SECRET` GitHub Actions secrets and
 must never appear in the repository.
+
+The release pull request is created with `GITHUB_TOKEN`, which cannot trigger workflows, so no
+checks ever report on it and branch protection shows it as blocked. Merge it with
+`gh pr merge <n> --squash --admin`. The build is still verified: the release job runs the tests,
+the build and both guards before it signs.
+
+**If the AMO submission fails** -- bad credentials, an AMO outage -- the release itself is already
+published, and re-running the job will not help: release-please runs first, sees the release, and
+every later step is skipped. Use the **Release** workflow's *Run workflow* button instead and give
+it the existing tag. That path re-runs the tests, the build and both guards against that tag, checks
+the tag matches the version it carries, and submits again.
