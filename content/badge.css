@@ -1,0 +1,51 @@
+/* The badge has to survive any page's CSS and must not disturb the layout it
+   lands in. `all: initial` drops everything inherited or matched from the page,
+   and every declaration after it is !important because a page rule can always
+   outrank a plain one on specificity.
+
+   Nothing here affects flow: inline-block with line-height 1 and no margin, so
+   the badge sits in the text like a word. */
+
+span[data-worthit-badge] {
+  all: initial !important;
+  display: inline-block !important;
+  box-sizing: content-box !important;
+  margin: 0 0 0 4px !important;
+  padding: 2px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #ff2d2d !important;
+  background-image: none !important;
+  color: #fff !important;
+  font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace !important;
+  font-size: 11px !important;
+  font-style: normal !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+  text-align: left !important;
+  text-decoration: none !important;
+  text-indent: 0 !important;
+  text-transform: none !important;
+  white-space: nowrap !important;
+  vertical-align: baseline !important;
+  direction: ltr !important;
+  float: none !important;
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+  cursor: help !important;
+  user-select: none !important;
+  pointer-events: auto !important;
+}

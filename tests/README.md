@@ -12,3 +12,4 @@ simply `require()`s the same file the extension ships.
 | `parser.test.js` | `(price string, page context)` to `(amount, currency)`: separators, prefix and suffix symbols, ISO codes, currency words and native scripts, regional quirks, zero-decimal currencies, the ambiguity resolution order, and the reject cases |
 | `calc.test.js` | hourly and monthly income conversion, rounding, and the framing-line thresholds |
 | `rates.test.js` | USD cross-conversion, cache-age logic, and the provider fallback order with a mocked `fetch` |
+| `overlay.test.js` | the content script against a real DOM through jsdom: badge insertion and placement, the double-badge guard, prices split across elements, the skip list, the amount filter, unknown currencies, tooltips, and instant response to settings, per-site and rate changes |

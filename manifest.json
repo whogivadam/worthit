@@ -23,6 +23,24 @@
       "background/background.js"
     ]
   },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "lib/currencies.js",
+        "lib/parser.js",
+        "lib/calc.js",
+        "lib/rates.js",
+        "content/content.js"
+      ],
+      "css": [
+        "content/badge.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
   "browser_specific_settings": {
     "gecko": {
       "id": "worthit-ext@proton.me",
