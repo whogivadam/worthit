@@ -8,6 +8,7 @@ simply `require()`s the same file the extension ships.
 
 | Suite | Covers |
 | --- | --- |
+| `tooling.test.js` | the repository's own contract: that commitlint, the PR-title workflow and `CONTRIBUTING.md` agree on the commit types and scopes, that the npm scripts the workflows call exist, and that the packaging ignore list keeps non-runtime files out of the zip |
 | `parser.test.js` | `(price string, page context)` to `(amount, currency)`: separators, prefix and suffix symbols, ISO codes, currency words and native scripts, regional quirks, zero-decimal currencies, the ambiguity resolution order, and the reject cases |
 | `calc.test.js` | hourly and monthly income conversion, rounding, and the framing-line thresholds |
 | `rates.test.js` | USD cross-conversion, cache-age logic, and the provider fallback order with a mocked `fetch` |
