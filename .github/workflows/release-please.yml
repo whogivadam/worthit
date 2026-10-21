@@ -15,7 +15,7 @@ jobs:
     steps:
       # Maintains a release PR; on merge it tags, writes CHANGELOG.md and bumps
       # the version in both package.json and manifest.json.
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         id: release
         with:
           config-file: release-please-config.json
