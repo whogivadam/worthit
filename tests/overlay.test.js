@@ -121,8 +121,19 @@ test('the badge lands immediately after the price, inside the same element', asy
 
 test('several prices in one text node each get their own badge', async () => {
   const page = await mount('<p>Förr 1 299 kr, nu 649 kr.</p>');
-  assert.equal(page.badges().length, 2);
   assert.deepEqual(page.labels(), ['7h30m', '3h45m']);
+
+  // Badging the first price splits the text node, and the new tail still holds
+  // the second price. Settle past the observer's debounce to be sure that does
+  // not come back round as a duplicate.
+  await page.settle();
+  assert.deepEqual(page.labels(), ['7h30m', '3h45m']);
+});
+
+test('splitting a node for one price does not re-badge the next', async () => {
+  const page = await mount('<p>$19 - $34</p>', { settings: Object.assign({}, DEFAULT_STORED.settings, { homeCurrency: 'USD' }) });
+  await page.settle();
+  assert.equal(page.badges().length, 2);
 });
 
 test('a price split across elements is badged once, on the parent', async () => {

@@ -78,6 +78,17 @@ const files = entries.filter((name) => !name.endsWith('/'));
 const unexpected = entries.filter((name) => !isAllowed(name));
 const missing = REQUIRED.filter((name) => !files.includes(name));
 
+// Every shipped icon has to be one the manifest actually references. The 128px
+// icon belongs to the AMO listing page, not to the extension, and an unused
+// asset in the zip is dead weight a reviewer has to ask about.
+const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
+const referenced = new Set([
+  ...Object.values(manifest.icons || {}),
+  ...Object.values((manifest.action && manifest.action.default_icon) || {}),
+]);
+const strayIcons = files.filter((name) => name.startsWith('icons/') && !referenced.has(name));
+strayIcons.forEach((name) => unexpected.push(name + ' (not referenced by manifest.json)'));
+
 if (unexpected.length || missing.length) {
   console.error(`check-zip: ${zip} is not shippable\n`);
   if (unexpected.length) {

@@ -134,6 +134,9 @@ test('release-please keeps package.json and manifest.json versions together', as
   const config = JSON.parse(read('release-please-config.json'));
   const root_ = config.packages['.'];
   assert.equal(root_['bump-minor-pre-major'], true, 'must stay on 0.x until stable');
+  // With no prior tag release-please falls back to its own default of 1.0.0,
+  // which is how the first release PR proposed 1.0.0 instead of 0.1.0.
+  assert.match(root_['initial-version'], /^0\./, 'the first release must be on 0.x');
   assert.deepEqual(root_['extra-files'], [
     { type: 'json', path: 'manifest.json', jsonpath: '$.version' },
   ]);

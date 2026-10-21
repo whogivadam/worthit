@@ -15,6 +15,8 @@ export default {
     'coverage',
     '.husky',
     'amo-metadata.json',
+    // The 128px icon is for the AMO listing page, not for the extension.
+    'icons/icon-128.png',
     'package.json',
     'package-lock.json',
     'web-ext-config.mjs',

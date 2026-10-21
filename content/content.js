@@ -199,6 +199,10 @@
 
       if (end < node.nodeValue.length) {
         const tail = node.splitText(end);
+        // The tail is a brand-new node, and everything in it has already been
+        // handled by an earlier turn of this loop. Without marking it, the
+        // observer sees it arrive and badges those prices a second time.
+        processedText.add(tail);
         parent.insertBefore(badge, tail);
       } else {
         parent.insertBefore(badge, node.nextSibling);
