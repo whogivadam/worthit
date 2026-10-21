@@ -3,15 +3,27 @@ name: Release
 on:
   push:
     branches: [main]
+  # Retry path for a submission that failed after the release already existed.
+  # Re-running the release job does not help: release-please runs first, sees
+  # the release, returns release_created false, and every later step is skipped.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to submit to AMO, e.g. v0.1.0"
+        required: true
+        type: string
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   release-please:
     name: release-please
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       # Maintains a release PR; on merge it tags, writes CHANGELOG.md and bumps
       # the version in both package.json and manifest.json.
@@ -49,11 +61,57 @@ jobs:
         if: ${{ steps.release.outputs.release_created }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ steps.release.outputs.tag_name }}" web-ext-artifacts/*.zip --clobber
+          TAG: ${{ steps.release.outputs.tag_name }}
+        run: gh release upload "$TAG" web-ext-artifacts/*.zip --clobber
 
       # Submits the version to AMO for review. Users install from the AMO listing.
+      # If this step fails, the release itself is already published; use the
+      # workflow_dispatch path above to submit it again.
       - name: Submit to AMO for review
         if: ${{ steps.release.outputs.release_created }}
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
+          WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        run: npm run sign
+
+  resubmit:
+    name: resubmit
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+
+      # The tag is attacker-controllable input in the general case, so it is
+      # passed through the environment rather than interpolated into the script.
+      - name: Check the tag matches the version it carries
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          version="$(node -p "require('./manifest.json').version")"
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error::$TAG does not carry version $version"
+            exit 1
+          fi
+          echo "submitting $version from $TAG"
+
+      - run: npm ci
+
+      - run: npm test
+
+      - run: npm run build
+
+      - run: npm run check-zip
+
+      - run: npm run check-privacy
+
+      - name: Submit to AMO for review
         env:
           WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
           WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
