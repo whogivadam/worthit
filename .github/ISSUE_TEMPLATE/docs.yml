@@ -1,0 +1,39 @@
+name: Documentation
+description: A change to the README, CONTRIBUTING, PRIVACY, SECURITY or the AMO listing text.
+title: "docs(scope): "
+labels: ["type:docs"]
+body:
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - repo
+        - release
+        - popup
+        - overlay
+        - parser
+        - rates
+        - background
+        - calc
+        - manifest
+        - tests
+        - ci
+        - deps
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What needs documenting
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ] The document states the change accurately
+        - [ ] No contradiction with PRIVACY.md or the AMO listing
+    validations:
+      required: true

@@ -1,0 +1,52 @@
+name: Feature
+description: A new capability or an improvement to an existing one.
+title: "feat(scope): "
+labels: ["type:feat"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Keep the title in commit form, e.g. `feat(rates): add Frankfurter fallback`.
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - popup
+        - overlay
+        - parser
+        - rates
+        - background
+        - calc
+        - manifest
+        - tests
+        - ci
+        - deps
+        - release
+        - repo
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is not possible or not pleasant today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should be built.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ]
+        - [ ] Covered by tests in `tests/`
+        - [ ] No new network calls and no new stored user data
+    validations:
+      required: true

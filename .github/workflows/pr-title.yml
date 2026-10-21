@@ -1,0 +1,50 @@
+name: PR title
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  pr-title:
+    name: pr-title
+    runs-on: ubuntu-latest
+    steps:
+      # The PR title becomes the squash commit on main, so it must satisfy the
+      # same Conventional Commits rules as commitlint.config.js.
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+          scopes: |
+            popup
+            overlay
+            parser
+            rates
+            background
+            calc
+            manifest
+            tests
+            ci
+            deps
+            release
+            repo
+          requireScope: true
+          subjectPattern: ^(?![A-Z])(?!.*\.$).{1,}$
+          subjectPatternError: |
+            The subject "{subject}" must start lower-case and must not end with a period.
+          headerPattern: '^(\w*)(?:\(([\w$.\-*/ ]*)\))?!?: (.*)$'

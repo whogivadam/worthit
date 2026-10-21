@@ -1,0 +1,42 @@
+{
+  "name": "worthit",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Firefox extension that converts any price into the hours of work needed to pay for it.",
+  "license": "MIT",
+  "author": "Magnus Jeppsson",
+  "homepage": "https://github.com/whogivadam/worthit",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/whogivadam/worthit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/whogivadam/worthit/issues"
+  },
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "test": "node --test tests/",
+    "lint": "eslint .",
+    "build": "web-ext build",
+    "sign": "web-ext sign --channel=listed --amo-metadata=amo-metadata.json",
+    "snapshot": "node scripts/build-snapshot.js",
+    "check-zip": "node scripts/check-zip.mjs",
+    "check-privacy": "node scripts/check-privacy.mjs",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{js,mjs}": "eslint --fix"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "21.2.4",
+    "@commitlint/config-conventional": "21.2.4",
+    "@eslint/js": "10.0.1",
+    "eslint": "10.13.0",
+    "globals": "17.13.0",
+    "husky": "9.1.7",
+    "lint-staged": "17.6.0",
+    "web-ext": "10.8.0"
+  }
+}

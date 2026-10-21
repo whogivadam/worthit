@@ -1,0 +1,68 @@
+name: Bug report
+description: Something behaves incorrectly.
+title: "fix(scope): "
+labels: ["type:fix"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Keep the title in commit form, e.g. `fix(overlay): stop double badges on infinite scroll`.
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      description: Which module does this affect?
+      options:
+        - popup
+        - overlay
+        - parser
+        - rates
+        - background
+        - calc
+        - manifest
+        - tests
+        - ci
+        - deps
+        - release
+        - repo
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: input
+    id: page
+    attributes:
+      label: Page or price string
+      description: The URL, or the exact price text that was mis-parsed.
+  - type: input
+    id: version
+    attributes:
+      label: Extension and Firefox version
+      placeholder: "0.1.0 / Firefox 140"
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: What must be true for this to be closed.
+      value: |
+        - [ ] A regression test covers the reported case
+        - [ ] The reported case behaves correctly
+    validations:
+      required: true

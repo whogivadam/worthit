@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      - name: eslint
+        run: npm run lint
+
+      - name: tests
+        run: npm test
+
+      # The extension source lands after the bootstrap commit. These steps skip
+      # themselves until manifest.json exists, then activate on their own.
+      - name: web-ext lint
+        if: ${{ hashFiles('manifest.json') != '' }}
+        run: npx web-ext lint
+
+      - name: build
+        if: ${{ hashFiles('manifest.json') != '' }}
+        run: npm run build
+
+      - name: verify zip contents
+        if: ${{ hashFiles('manifest.json') != '' }}
+        run: npm run check-zip
+
+      - name: privacy guard
+        if: ${{ hashFiles('manifest.json') != '' }}
+        run: npm run check-privacy
