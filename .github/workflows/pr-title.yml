@@ -14,7 +14,7 @@ jobs:
     steps:
       # The PR title becomes the squash commit on main, so it must satisfy the
       # same Conventional Commits rules as commitlint.config.js.
-      - uses: amannn/action-semantic-pull-request@v5
+      - uses: amannn/action-semantic-pull-request@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -44,7 +44,12 @@ jobs:
             release
             repo
           requireScope: true
-          subjectPattern: ^(?![A-Z])(?!.*\.$).{1,}$
+          # Only the trailing period is rejected here. Dependabot writes
+          # "build(deps): Bump x from 4 to 7" and cannot be told to lower-case
+          # "Bump", and because pr-title is a required check, a capitalised
+          # subject would make every dependency PR unmergeable. Lower-case
+          # subjects are still enforced for hand-written commits by commitlint.
+          subjectPattern: ^(?!.*\.$).{1,}$
           subjectPatternError: |
-            The subject "{subject}" must start lower-case and must not end with a period.
+            The subject "{subject}" must not end with a period.
           headerPattern: '^(\w*)(?:\(([\w$.\-*/ ]*)\))?!?: (.*)$'
