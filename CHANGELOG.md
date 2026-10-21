@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/whogivadam/worthit/compare/v0.1.0...v0.1.1) (2026-10-21)
+
+
+### Bug Fixes
+
+* **ci:** allow re-submitting a version to AMO ([#36](https://github.com/whogivadam/worthit/issues/36)) ([242e564](https://github.com/whogivadam/worthit/commit/242e56439106e33d0d4122d8dee76ccdb74cd356))
+
 ## 0.1.0 (2026-10-21)
 
 
