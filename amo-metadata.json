@@ -1,0 +1,28 @@
+{
+  "name": {
+    "en-US": "Worth It?"
+  },
+  "summary": {
+    "en-US": "Turns any price into the hours of work it costs you. Set your after-tax income once, then see the real price next to every amount on any shop, and check any figure yourself in the popup."
+  },
+  "description": {
+    "en-US": "A price is just a number until you know what it costs you.\n\nWorth It? converts prices into the time you had to work to pay for them, using your own after-tax income. Prices on a page get a small badge -- 3h45m, or 2.5d once it passes a working day -- and the popup lets you check any amount by hand, in your currency or another one.\n\nWHAT IT DOES\n\n- Set a monthly after-tax salary or an hourly rate once, plus hours worked per week. It never asks again.\n- Badges appear next to prices on any shop, in any of about 160 currencies, converted to yours at published exchange rates.\n- The popup shows the figure as hours and minutes, with a line that puts it in proportion, a workday bar, and a history of your last 20 checks with a running total.\n- Turn the badges off globally, or disable the extension on one site, or force a currency on a site whose prices are ambiguous.\n\nPRIVACY: NOTHING IS COLLECTED\n\nYour income, your settings and your check history are stored only in this browser, on your own machine. The extension never uses browser sync, so none of it is uploaded to a Mozilla account or copied between devices. Clearing the history or uninstalling removes it.\n\nThe extension makes exactly one kind of network request: fetching published exchange rates so a price in another currency can be converted to yours. That request asks for one thing, the current rate table with USD as the base, and carries nothing else -- no price you look at or type in, no income, no page address, no identifier, no cookies. It is identical for every user, and it runs on a daily timer rather than when you browse, so not even its timing says anything about you.\n\nThere is no analytics, telemetry, error reporting, remote configuration, or third-party script, font or CDN. All code and styling ship inside the extension. This is checked automatically on every change before a release.\n\nWHY IT NEEDS ACCESS TO ANY SITE\n\nPrices turn up on any shop, in any country, so the price detector has to be able to run anywhere -- there is no list of shopping sites that would not miss the one you are on. It reads the text of pages locally to find prices and sends nothing anywhere. The extension deliberately does not request the \"tabs\" permission, so it cannot see your tabs or your browsing history.\n\nOPEN SOURCE\n\nMIT licensed, developed in the open, and shipped exactly as written: no bundler, minifier or transpiler, so the code you can read in the repository is the code that runs.\n\nExchange rates by ExchangeRate-API, with the European Central Bank feed via Frankfurter as a fallback and a bundled offline snapshot as a last resort. The popup always shows which source and date are in use, and warns when the data is more than seven days old."
+  },
+  "categories": [
+    "shopping"
+  ],
+  "homepage": {
+    "en-US": "https://github.com/whogivadam/worthit"
+  },
+  "support_email": {
+    "en-US": "worthit-ext@proton.me"
+  },
+  "support_url": {
+    "en-US": "https://github.com/whogivadam/worthit/issues"
+  },
+  "is_experimental": false,
+  "requires_payment": false,
+  "version": {
+    "license": "MIT"
+  }
+}

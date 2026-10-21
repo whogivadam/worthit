@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="sv">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:locale" content="sv_SE" />
+    <title>Nordhem – hemelektronik</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        color: #1a1a1a;
+        background: #f6f4f0;
+      }
+      header {
+        background: #11324d;
+        color: #fff;
+        padding: 18px 40px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      header b { font-size: 20px; letter-spacing: 0.04em; }
+      nav { font-size: 14px; opacity: 0.85; }
+      nav span { margin-left: 22px; }
+      main { max-width: 1100px; margin: 0 auto; padding: 30px 40px 60px; }
+      h1 { font-size: 26px; margin: 0 0 4px; }
+      .lede { color: #555; margin: 0 0 26px; font-size: 15px; }
+      .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+      .card {
+        background: #fff;
+        border: 1px solid #ddd8d0;
+        padding: 18px;
+      }
+      .card h2 { font-size: 16px; margin: 0 0 6px; }
+      .card p { margin: 0 0 10px; font-size: 13px; color: #666; }
+      .price { font-size: 22px; font-weight: bold; color: #11324d; }
+      .was { font-size: 13px; color: #999; text-decoration: line-through; }
+      .rabatt { color: #b00; font-size: 13px; font-weight: bold; }
+      .split .belopp { font-size: 22px; font-weight: bold; color: #11324d; }
+      .split .valuta { font-size: 14px; color: #11324d; margin-left: 2px; }
+      footer {
+        margin-top: 40px;
+        border-top: 1px solid #ddd8d0;
+        padding-top: 18px;
+        font-size: 13px;
+        color: #777;
+      }
+      code { background: #eee; padding: 1px 4px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <b>NORDHEM</b>
+      <nav><span>Datorer</span><span>Ljud</span><span>Kampanjer</span><span>Kundtjänst</span></nav>
+    </header>
+
+    <main>
+      <h1>Kampanjer denna vecka</h1>
+      <p class="lede">Fri frakt över 499 kr. Priser inklusive moms.</p>
+
+      <div class="grid">
+        <div class="card">
+          <h2>Grafikkort RTX 4090</h2>
+          <p>24 GB, tre fläktar. Artikelnummer 884-21.</p>
+          <p class="price">18 999 kr</p>
+        </div>
+
+        <div class="card">
+          <h2>Hörlurar, trådlösa</h2>
+          <p>Brusreducering, 40 timmars batteritid.</p>
+          <p><span class="was">2 499 kr</span> <span class="price">1 299 kr</span></p>
+          <p class="rabatt">Spara 48%</p>
+        </div>
+
+        <div class="card split">
+          <h2>Mekaniskt tangentbord</h2>
+          <p>Priset står i två element, som på många riktiga butiker.</p>
+          <p><span class="belopp">1 299</span><span class="valuta">kr</span></p>
+        </div>
+
+        <div class="card">
+          <h2>Mus, kontor</h2>
+          <p>Tyst klick, laddbar.</p>
+          <p class="price">499:-</p>
+        </div>
+
+        <div class="card">
+          <h2>Skärmarm</h2>
+          <p>Passar skärmar upp till 32 tum.</p>
+          <p class="price">2 499:99</p>
+        </div>
+
+        <div class="card">
+          <h2>Kablar och adaptrar</h2>
+          <p>Flera varianter i lager.</p>
+          <p class="price">399-599 kr</p>
+        </div>
+      </div>
+
+      <footer>
+        <p>Kampanjen gäller till 2026-01-15. Kundtjänst: +46 70 123 45 67.</p>
+        <p>Modellbeteckningar som <code>RTX 4090</code> och ordernummer som 123-45-67 är inte priser.</p>
+      </footer>
+    </main>
+  </body>
+</html>
