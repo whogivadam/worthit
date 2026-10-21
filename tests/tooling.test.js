@@ -176,3 +176,57 @@ test('the packaging ignore list excludes everything that is not runtime code', a
   // LICENSE must stay in the zip.
   assert.ok(!ignored.includes('LICENSE'), 'LICENSE must ship inside the extension');
 });
+
+test('every element the popup script reaches for exists in its HTML', () => {
+  // The popup has no automated DOM test, so this pins the one contract that
+  // breaks silently: a renamed or mistyped id. A miss here would show up as a
+  // dead button rather than an error.
+  const script = read('popup/popup.js');
+  const markup = read('popup/popup.html');
+
+  const ids = new Set(
+    [...markup.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]),
+  );
+  const wanted = new Set([
+    ...[...script.matchAll(/\$\('([^']+)'\)/g)].map((match) => match[1]),
+    ...[...script.matchAll(/getElementById\('([^']+)'\)/g)].map((match) => match[1]),
+  ]);
+
+  assert.ok(wanted.size > 10, `expected the popup to address many elements, saw ${wanted.size}`);
+  for (const id of wanted) {
+    assert.ok(ids.has(id), `popup.js addresses #${id}, which popup.html does not define`);
+  }
+
+  // Attribute selectors too, e.g. the income-mode radios.
+  const names = new Set([...markup.matchAll(/\bname="([^"]+)"/g)].map((match) => match[1]));
+  for (const [, name] of script.matchAll(/\[name="([^"]+)"\]/g)) {
+    assert.ok(names.has(name), `popup.js selects [name="${name}"], which popup.html does not define`);
+  }
+});
+
+test('the popup builds nodes instead of assigning markup', () => {
+  // innerHTML in an extension popup is what AMO review flags first, and the
+  // history list renders user-entered text.
+  const script = read('popup/popup.js');
+  const assignments = script.match(/\.innerHTML\s*=/g) || [];
+  assert.deepEqual(assignments, [], 'popup.js must not assign innerHTML');
+  assert.match(script, /replaceChildren\(/, 'expected DOM construction');
+});
+
+test('the popup ships the required rate attribution', () => {
+  const markup = read('popup/popup.html');
+  assert.match(markup, /Rates by ExchangeRate-API/);
+  assert.match(markup, /href="https:\/\/www\.exchangerate-api\.com"/);
+});
+
+test('the popup loads every library it uses, in dependency order', () => {
+  const markup = read('popup/popup.html');
+  const scripts = [...markup.matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => m[1]);
+  assert.deepEqual(scripts, [
+    '../lib/currencies.js',
+    '../lib/parser.js',
+    '../lib/calc.js',
+    '../lib/rates.js',
+    'popup.js',
+  ]);
+});

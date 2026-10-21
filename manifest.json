@@ -3,6 +3,10 @@
   "name": "Worth It?",
   "version": "0.0.0",
   "description": "Turn any price into the hours of work it costs you, in the popup and next to prices on any shop.",
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Worth It?"
+  },
   "permissions": [
     "storage",
     "alarms",

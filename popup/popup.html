@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Worth It?</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <h1>WORTH IT?</h1>
+      <button id="open-settings" class="icon" type="button" title="Settings">SETTINGS</button>
+    </header>
+
+    <!-- Manual check -->
+    <main id="view-main" hidden>
+      <div class="price-row">
+        <span id="currency-symbol" class="symbol">$</span>
+        <input
+          id="price"
+          type="text"
+          inputmode="decimal"
+          autocomplete="off"
+          placeholder="0"
+          aria-label="Price"
+        />
+        <select id="source-currency" aria-label="Currency of this price"></select>
+      </div>
+
+      <section id="result" class="result" hidden>
+        <p id="time" class="huge">&nbsp;</p>
+        <p class="of-your-life">of your life</p>
+        <p id="framing" class="framing"></p>
+        <div id="blocks" class="blocks" aria-hidden="true"></div>
+        <p id="overflow" class="overflow"></p>
+        <button id="share" class="wide" type="button">COPY</button>
+      </section>
+
+      <p id="no-rate" class="warn-box" hidden></p>
+
+      <section class="panel">
+        <h2>
+          HISTORY
+          <span id="total" class="total"></span>
+        </h2>
+        <ol id="history-list" class="history"></ol>
+        <p id="history-empty" class="muted">Nothing checked yet.</p>
+        <button id="clear" class="wide ghost" type="button">CLEAR HISTORY</button>
+      </section>
+
+      <section class="panel" id="site-panel">
+        <h2>THIS SITE</h2>
+        <p id="site-host" class="muted"></p>
+        <label class="check">
+          <input id="site-disabled" type="checkbox" />
+          <span>Disable on this site</span>
+        </label>
+        <label class="field">
+          <span>Force currency on this site</span>
+          <select id="site-currency"></select>
+        </label>
+      </section>
+
+      <footer class="bar footer">
+        <div>
+          <p id="rate-status" class="muted"></p>
+          <a
+            id="attribution"
+            href="https://www.exchangerate-api.com"
+            target="_blank"
+            rel="noreferrer"
+            >Rates by ExchangeRate-API</a
+          >
+        </div>
+        <button id="refresh" class="icon" type="button">REFRESH</button>
+      </footer>
+    </main>
+
+    <!-- Settings. Shown automatically on first run, and never again once saved. -->
+    <section id="view-settings" hidden>
+      <p id="first-run" class="lead" hidden>
+        One thing first: what do you earn after tax? It stays on this machine.
+      </p>
+
+      <fieldset>
+        <legend>INCOME</legend>
+        <label class="radio">
+          <input type="radio" name="income-mode" value="monthly" />
+          <span>Monthly, after tax</span>
+        </label>
+        <input
+          id="monthly"
+          type="text"
+          inputmode="decimal"
+          autocomplete="off"
+          aria-label="Monthly after-tax income"
+        />
+        <label class="radio">
+          <input type="radio" name="income-mode" value="hourly" />
+          <span>Hourly, after tax</span>
+        </label>
+        <input
+          id="hourly"
+          type="text"
+          inputmode="decimal"
+          autocomplete="off"
+          aria-label="Hourly after-tax rate"
+        />
+      </fieldset>
+
+      <label class="field">
+        <span>Hours worked per week</span>
+        <input id="hours-per-week" type="text" inputmode="decimal" autocomplete="off" />
+      </label>
+
+      <label class="field">
+        <span>Home currency</span>
+        <select id="home-currency"></select>
+      </label>
+
+      <label class="check">
+        <input id="overlay-enabled" type="checkbox" />
+        <span>Show badges next to prices on pages</span>
+      </label>
+
+      <p id="settings-error" class="warn-box" hidden></p>
+
+      <button id="save-settings" class="wide" type="button">SAVE</button>
+      <button id="cancel-settings" class="wide ghost" type="button" hidden>BACK</button>
+    </section>
+
+    <script src="../lib/currencies.js"></script>
+    <script src="../lib/parser.js"></script>
+    <script src="../lib/calc.js"></script>
+    <script src="../lib/rates.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>
