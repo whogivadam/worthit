@@ -29,7 +29,20 @@
           placeholder="0"
           data-i18n-aria-label="price.label"
         />
-        <select id="source-currency" data-i18n-aria-label="price.currencyLabel"></select>
+        <div class="combo" data-combo="source-currency">
+          <input
+            id="source-currency"
+            class="combo-input"
+            type="text"
+            role="combobox"
+            autocomplete="off"
+            aria-expanded="false"
+            aria-autocomplete="list"
+            aria-controls="source-currency-list"
+            data-i18n-aria-label="price.currencyLabel"
+          />
+          <ul id="source-currency-list" class="combo-list" role="listbox" hidden></ul>
+        </div>
       </div>
 
       <section id="result" class="result" hidden>
@@ -62,7 +75,20 @@
         </label>
         <label class="field">
           <span data-i18n="site.forceCurrency"></span>
-          <select id="site-currency"></select>
+          <div class="combo" data-combo="site-currency">
+          <input
+            id="site-currency"
+            class="combo-input"
+            type="text"
+            role="combobox"
+            autocomplete="off"
+            aria-expanded="false"
+            aria-autocomplete="list"
+            aria-controls="site-currency-list"
+            data-i18n-aria-label="site.forceCurrency"
+          />
+          <ul id="site-currency-list" class="combo-list" role="listbox" hidden></ul>
+        </div>
         </label>
       </section>
 
@@ -118,7 +144,20 @@
 
       <label class="field">
         <span data-i18n="settings.homeCurrency"></span>
-        <select id="home-currency"></select>
+        <div class="combo" data-combo="home-currency">
+          <input
+            id="home-currency"
+            class="combo-input"
+            type="text"
+            role="combobox"
+            autocomplete="off"
+            aria-expanded="false"
+            aria-autocomplete="list"
+            aria-controls="home-currency-list"
+            data-i18n-aria-label="settings.homeCurrency"
+          />
+          <ul id="home-currency-list" class="combo-list" role="listbox" hidden></ul>
+        </div>
       </label>
 
       <label class="field">
@@ -141,6 +180,7 @@
     <script src="../lib/parser.js"></script>
     <script src="../lib/calc.js"></script>
     <script src="../lib/i18n.js"></script>
+    <script src="../lib/search.js"></script>
     <script src="../lib/rates.js"></script>
     <script src="popup.js"></script>
   </body>

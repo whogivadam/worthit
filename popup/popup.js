@@ -9,6 +9,7 @@
   const Parser = globalThis.WorthItParser;
   const Calc = globalThis.WorthItCalc;
   const I18n = globalThis.WorthItI18n;
+  const Search = globalThis.WorthItSearch;
   const Rates = globalThis.WorthItRates;
 
   const SETTINGS_KEY = 'settings';
@@ -98,12 +99,6 @@
     return element;
   }
 
-  // Each row reads '<flag> CODE <symbol>'. The flag is the fastest way to find your
-  // own currency in 162 rows, and the only cue that works without knowing ISO 4217:
-  // the symbol does not disambiguate, with 'kr' shared four ways and '$' a dozen.
-  // The code stays in the label, so a row is still identifiable where the flag does
-  // not draw -- see flagFor() on what Windows does. Rows without a flag start at the
-  // code; nothing is padded in, since the fallback width differs per platform anyway.
   /**
    * Applies the string table to the markup: data-i18n sets text, the two
    * data-i18n-* attributes set theirs. Runs on open and again on every language
@@ -131,19 +126,240 @@
     select.value = I18n.language();
   }
 
-  function fillCurrencySelect(select, selected, blankLabel) {
-    select.replaceChildren();
-    if (blankLabel) select.append(option('', blankLabel));
-    Currencies.CURRENCIES.forEach((currency) => {
-      const symbol = currency.symbols.length
-        ? ' ' + currency.symbols[currency.symbols.length - 1]
-        : '';
-      const flag = Currencies.flagFor(currency.region);
-      select.append(
-        option(currency.code, (flag ? flag + ' ' : '') + currency.code + symbol)
-      );
+  // Each row reads '<flag> CODE <symbol>'. The flag is the fastest way to find your
+  // own currency in 162 rows, and the only cue that works without knowing ISO 4217:
+  // the symbol does not disambiguate, with 'kr' shared four ways and '$' a dozen.
+  // The code stays in the label, so a row is still identifiable where the flag does
+  // not draw -- see flagFor() on what Windows does. Rows without a flag start at the
+  // code; nothing is padded in, since the fallback width differs per platform anyway.
+  function currencyLabel(code) {
+    const currency = Currencies.BY_CODE[code];
+    if (!currency) return code || '';
+    const symbol = currency.symbols.length
+      ? ' ' + currency.symbols[currency.symbols.length - 1]
+      : '';
+    const flag = Currencies.flagFor(currency.region);
+    return (flag ? flag + ' ' : '') + code + symbol;
+  }
+
+  // --- the currency picker ---------------------------------------------------
+
+  const pickers = Object.create(null);
+
+  // Kept in step with .combo-list in popup.css: used only to decide whether the
+  // list has room to open downwards.
+  const LIST_MAX_HEIGHT = 232;
+  const ROW_HEIGHT = 28;
+
+  /**
+   * A searchable currency picker: an input over a listbox, filtered through
+   * lib/search.js on code, country or the currency's own name.
+   *
+   * It is a combobox rather than a <select> because a <select> cannot be typed
+   * into -- browsers give only first-letter type-ahead, so 's' walks SAR, SBD,
+   * SCR, SDG, SEK one keystroke at a time. Everything the <select> gave for
+   * free is therefore re-implemented here: expanded state, an active option,
+   * arrow keys, Enter, Escape, and the aria wiring that tells a screen reader
+   * what is active.
+   *
+   * value() is always the bare ISO code. The text in the input is for reading
+   * and typing only, and is restored from the code whenever the picker closes,
+   * so a half-typed query can never become the setting.
+   */
+  function createPicker(id, config) {
+    const input = $(id);
+    const list = $(id + '-list');
+    const settings = config || {};
+    const picker = {
+      code: '',
+      open: false,
+      active: -1,
+      rows: [],
+      // The input shows the selected label until the user actually types. Until
+      // then the query is empty, so opening shows the whole list rather than
+      // filtering by the label that is already sitting in the field.
+      typed: false,
+    };
+
+    function blankLabelText() {
+      const label = settings.blankLabel ? settings.blankLabel() : null;
+      return label || '';
+    }
+
+    function rowsFor(query) {
+      const matches = Search.search(query, I18n.language()).map((entry) => ({
+        code: entry.code,
+        label: currencyLabel(entry.code),
+        description: entry.description,
+      }));
+      // The blank row is an escape hatch, not a search result: it sits at the
+      // top while nothing is typed and drops away once something is.
+      const blank = blankLabelText();
+      const head = !query && blank ? [{ code: '', label: blank, description: '' }] : [];
+      return head.concat(matches);
+    }
+
+    function renderList() {
+      list.replaceChildren();
+      picker.rows.forEach((row, index) => {
+        const item = document.createElement('li');
+        item.id = id + '-opt-' + index;
+        item.setAttribute('role', 'option');
+        item.setAttribute('aria-selected', String(row.code === picker.code));
+        item.dataset.code = row.code;
+        if (index === picker.active) item.classList.add('active');
+
+        const label = document.createElement('span');
+        label.className = 'combo-label';
+        label.textContent = row.label;
+        item.append(label);
+
+        if (row.description) {
+          const description = document.createElement('span');
+          description.className = 'combo-description';
+          description.textContent = row.description;
+          item.append(description);
+        }
+        list.append(item);
+      });
+
+      const active = picker.active >= 0 ? list.children[picker.active] : null;
+      input.setAttribute('aria-activedescendant', active ? active.id : '');
+      if (active && typeof active.scrollIntoView === 'function') {
+        active.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    /**
+     * Opens upwards when there is no room below. The list is absolutely
+     * positioned, so it cannot make the popup taller the way a <select> made
+     * the browser find space -- without this, the site and home pickers sit far
+     * enough down the panel that their list would be cut off by the window edge.
+     */
+    function placeList() {
+      if (typeof input.getBoundingClientRect !== 'function') return;
+      const view = input.ownerDocument.defaultView;
+      const viewport = view && view.innerHeight;
+      if (!viewport) return;
+      const rect = input.getBoundingClientRect();
+      const below = viewport - rect.bottom;
+      const needed = Math.min(LIST_MAX_HEIGHT, picker.rows.length * ROW_HEIGHT);
+      list.classList.toggle('up', below < needed && rect.top > below);
+    }
+
+    function show(query) {
+      picker.rows = rowsFor(query);
+      // Opening lands on what is already chosen, so arrows start from there.
+      // Once something is typed the top row wins instead: it is the best match
+      // by ranking, and Enter should take the obvious thing rather than whatever
+      // happened to be selected before.
+      const current = picker.typed
+        ? -1
+        : picker.rows.findIndex((row) => row.code === picker.code);
+      picker.active = current >= 0 ? current : picker.rows.length ? 0 : -1;
+      picker.open = true;
+      list.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+      renderList();
+      placeList();
+    }
+
+    function close() {
+      picker.open = false;
+      picker.typed = false;
+      list.hidden = true;
+      list.replaceChildren();
+      input.setAttribute('aria-expanded', 'false');
+      input.setAttribute('aria-activedescendant', '');
+      input.value = picker.code ? currencyLabel(picker.code) : blankLabelText();
+    }
+
+    function choose(index) {
+      const row = picker.rows[index];
+      if (!row) return;
+      const changed = row.code !== picker.code;
+      picker.code = row.code;
+      close();
+      if (changed && settings.onChange) settings.onChange(picker.code);
+    }
+
+    function move(step) {
+      if (!picker.open) {
+        show(picker.typed ? input.value : '');
+        return;
+      }
+      if (!picker.rows.length) return;
+      const count = picker.rows.length;
+      picker.active = (picker.active + step + count) % count;
+      renderList();
+    }
+
+    input.addEventListener('focus', () => show(''));
+    input.addEventListener('click', () => {
+      if (!picker.open) show(picker.typed ? input.value : '');
     });
-    select.value = selected || '';
+    input.addEventListener('input', () => {
+      picker.typed = true;
+      show(input.value);
+    });
+
+    input.addEventListener('keydown', (event) => {
+      switch (event.key) {
+        case 'ArrowDown':
+          event.preventDefault();
+          move(1);
+          break;
+        case 'ArrowUp':
+          event.preventDefault();
+          move(-1);
+          break;
+        case 'Enter':
+          if (picker.open) {
+            event.preventDefault();
+            choose(picker.active);
+          }
+          break;
+        case 'Escape':
+          if (picker.open) {
+            event.preventDefault();
+            close();
+          }
+          break;
+        case 'Tab':
+          if (picker.open) close();
+          break;
+        default:
+          break;
+      }
+    });
+
+    // A half-typed query must not survive leaving the field. mousedown on the
+    // list is swallowed so the click lands before the blur empties it.
+    input.addEventListener('blur', () => {
+      if (picker.open) close();
+    });
+    list.addEventListener('mousedown', (event) => event.preventDefault());
+    list.addEventListener('click', (event) => {
+      const item = event.target.closest('[role="option"]');
+      if (item) choose([...list.children].indexOf(item));
+    });
+
+    const controller = {
+      value: () => picker.code,
+      setValue: (code) => {
+        picker.code = code || '';
+        if (picker.open) show(picker.typed ? input.value : '');
+        else close();
+      },
+      // Labels and the search index are both language-dependent, so a language
+      // change re-reads them rather than leaving English rows behind.
+      refresh: () => {
+        picker.code = picker.code || '';
+        close();
+      },
+    };
+    pickers[id] = controller;
+    return controller;
   }
 
   // --- the check -------------------------------------------------------------
@@ -194,7 +410,7 @@
 
   function runCheck() {
     const raw = $('price').value;
-    const input = readInput(raw, $('source-currency').value);
+    const input = readInput(raw, pickers['source-currency'].value());
 
     if (!input) {
       $('result').hidden = true;
@@ -325,7 +541,7 @@
     const site = siteSettings(state.host);
     $('site-host').textContent = state.host;
     $('site-disabled').checked = Boolean(site.disabled);
-    fillCurrencySelect($('site-currency'), site.forceCurrency || '', I18n.t('site.autoDetect'));
+    pickers['site-currency'].setValue(site.forceCurrency || '');
   }
 
   async function updateSite(changes) {
@@ -340,7 +556,7 @@
     $('view-settings').hidden = true;
     $('view-main').hidden = false;
     $('currency-symbol').textContent = symbolFor(state.settings.homeCurrency);
-    fillCurrencySelect($('source-currency'), state.settings.homeCurrency, null);
+    pickers['source-currency'].setValue(state.settings.homeCurrency);
     renderHistory();
     renderRateStatus();
     renderSite();
@@ -362,7 +578,7 @@
     $('hourly').value = state.settings.hourly === '' ? '' : String(state.settings.hourly);
     $('hours-per-week').value = String(state.settings.hoursPerWeek);
     $('overlay-enabled').checked = state.settings.overlayEnabled !== false;
-    fillCurrencySelect($('home-currency'), state.settings.homeCurrency, null);
+    pickers['home-currency'].setValue(state.settings.homeCurrency);
     fillLanguageSelect();
   }
 
@@ -383,7 +599,7 @@
       monthly: readNumber($('monthly').value),
       hourly: readNumber($('hourly').value),
       hoursPerWeek: readNumber($('hours-per-week').value) || 40,
-      homeCurrency: $('home-currency').value || 'USD',
+      homeCurrency: pickers['home-currency'].value() || 'USD',
       overlayEnabled: $('overlay-enabled').checked,
       language: state.settings.language,
     };
@@ -408,6 +624,17 @@
     debounceTimer = window.setTimeout(runCheck, DEBOUNCE_MS);
   }
 
+  function buildPickers() {
+    createPicker('source-currency', { onChange: runCheck });
+    createPicker('home-currency', {});
+    createPicker('site-currency', {
+      // Read through a function rather than captured once, so the row follows a
+      // language change like every other string does.
+      blankLabel: () => I18n.t('site.autoDetect'),
+      onChange: (code) => updateSite({ forceCurrency: code || null }),
+    });
+  }
+
   function wire() {
     // Never per keystroke: Enter runs it now, otherwise half a second of quiet.
     $('price').addEventListener('input', scheduleCheck);
@@ -417,7 +644,6 @@
         runCheck();
       }
     });
-    $('source-currency').addEventListener('change', runCheck);
 
     $('share').addEventListener('click', async () => {
       if (!state.lastResult) return;
@@ -444,9 +670,6 @@
     $('site-disabled').addEventListener('change', (event) => {
       updateSite({ disabled: event.target.checked });
     });
-    $('site-currency').addEventListener('change', (event) => {
-      updateSite({ forceCurrency: event.target.value || null });
-    });
 
     $('refresh').addEventListener('click', async () => {
       $('refresh').textContent = '...';
@@ -471,6 +694,8 @@
       await save(SETTINGS_KEY, state.settings);
       applyTranslations();
       fillLanguageSelect();
+      Search.clearCache();
+      Object.keys(pickers).forEach((id) => pickers[id].refresh());
       renderHistory();
       renderRateStatus();
       renderSite();
@@ -494,6 +719,7 @@
     await load();
     state.host = await readActiveHost();
     applyTranslations();
+    buildPickers();
     wire();
     if (isConfigured(state.settings)) {
       showMain();

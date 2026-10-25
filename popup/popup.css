@@ -132,13 +132,99 @@ button:focus {
   flex: 1 1 auto;
 }
 
-#source-currency {
-  width: auto;
-  border: 0;
+/* --- the currency picker --------------------------------------------------
+   A combobox, not a select: 162 rows need typing into. The input keeps the
+   shared input[type="text"] styling; everything below is the listbox it drops. */
+
+.combo {
+  position: relative;
+}
+
+.combo-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: 232px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--paper);
+  border: var(--rule);
+  border-top: 0;
+}
+
+.combo-list [role="option"] {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+
+.combo-list [role="option"] + [role="option"] {
+  border-top: 1px solid #ddd;
+}
+
+.combo-label {
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.combo-description {
+  color: var(--muted);
+  font-size: 11px;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Set by the picker when there is not enough room below the field. */
+.combo-list.up {
+  top: auto;
+  bottom: 100%;
+  border-top: var(--rule);
+  border-bottom: 0;
+}
+
+/* The chosen row stays marked even while the keyboard is on another row. */
+.combo-list [aria-selected="true"] {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.combo-list [role="option"].active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.combo-list [role="option"].active .combo-description {
+  color: var(--paper);
+}
+
+/* Inline in the price row the field has to stay narrow. The list it drops does
+   not, so it anchors to the right edge and takes the width it needs. */
+.price-row .combo {
+  flex: 0 0 auto;
   border-left: var(--rule);
+}
+
+#source-currency {
+  width: 112px;
+  border: 0;
   font-size: 12px;
   padding: 0 6px;
-  flex: 0 0 auto;
+  height: 100%;
+}
+
+.price-row .combo-list {
+  left: auto;
+  right: 0;
+  width: 304px;
 }
 
 fieldset {
