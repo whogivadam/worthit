@@ -87,3 +87,20 @@ Save all five into this directory, 1280 x 800 each. Responsive Design Mode on a 
 them at 2560 x 1602 even with DPR 1; scale and crop with
 `sips -Z 1280 shot.png && sips -c 800 1280 shot.png`. Nothing here ships in the extension: `docs/` is excluded by
 `web-ext-config.mjs`, and `npm run check-zip` fails if that ever stops being true.
+
+## Putting them on the listing
+
+`web-ext sign --amo-metadata` carries the text fields in `amo-metadata.json` and nothing else. The
+images are not part of that API, so the screenshots and the listing icon have to be uploaded by hand,
+once, at
+[addons.mozilla.org/developers/addon/worth-it/edit](https://addons.mozilla.org/en-US/developers/addon/worth-it/edit):
+
+- **Listing icon** — `../../icons/icon-128.png`. Without it the listing shows Mozilla's grey
+  placeholder, even though `manifest.json` references the 48 and 96 px icons and both ship in the zip.
+- **Screenshots** — `01-*.png` … `05-*.png`, in that order; the order on the page is the order they
+  are shown in.
+- **Privacy policy** — optional. The description already carries the privacy section and the manifest
+  declares no data collection, so the field being empty is not a review problem.
+
+None of this is version-specific: it survives every later release, and a new version does not reset
+or re-require it.
