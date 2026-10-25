@@ -157,6 +157,7 @@ const SCRIPTS = [
   'lib/parser.js',
   'lib/calc.js',
   'lib/i18n.js',
+  'lib/search.js',
   'lib/rates.js',
   'popup/popup.js',
 ].map((file) => fs.readFileSync(path.join(root, file), 'utf8'));
@@ -195,51 +196,66 @@ async function openPopup() {
   SCRIPTS.forEach((source) => window.eval(source));
   // start() is async, so let its microtasks drain before reading the DOM.
   await new Promise((resolve) => window.setTimeout(resolve, 0));
-  // These settings are configured, so the popup opens on the main pane and only
-  // two of the three selects exist yet. The settings pane fills the third.
-  window.document.getElementById('open-settings').click();
   return window.document;
 }
 
-test('every currency select shows a flag, the code and the symbol', async () => {
+/**
+ * Opens a picker and returns its rows. The pickers build their list on focus,
+ * and jsdom will not focus anything inside a hidden subtree, so the pane that
+ * holds the picker has to be the visible one first: home-currency is on the
+ * settings pane and the other two are on the main pane.
+ */
+function rowsOf(document, id) {
+  const wantSettings = id === 'home-currency';
+  const onSettings = !document.getElementById('view-settings').hidden;
+  if (wantSettings && !onSettings) document.getElementById('open-settings').click();
+  if (!wantSettings && onSettings) document.getElementById('cancel-settings').click();
+  document.getElementById(id).focus();
+  return [...document.querySelectorAll('#' + id + '-list [role="option"]')].map((item) => ({
+    code: item.dataset.code,
+    label: item.querySelector('.combo-label').textContent,
+    description: item.querySelector('.combo-description')
+      ? item.querySelector('.combo-description').textContent
+      : '',
+  }));
+}
+
+test('every currency picker shows a flag, the code and the symbol', async () => {
   const document = await openPopup();
   ['source-currency', 'site-currency', 'home-currency'].forEach((id) => {
-    const select = document.getElementById(id);
-    const options = [...select.options].filter((option) => option.value);
-    assert.equal(options.length, Currencies.CURRENCIES.length, `${id} is short of rows`);
+    const rows = rowsOf(document, id).filter((row) => row.code);
+    assert.equal(rows.length, Currencies.CURRENCIES.length, `${id} is short of rows`);
 
-    const sek = options.find((option) => option.value === 'SEK');
-    assert.equal(sek.textContent, '\u{1F1F8}\u{1F1EA} SEK kr', id);
-
-    const eur = options.find((option) => option.value === 'EUR');
-    assert.equal(eur.textContent, '\u{1F1EA}\u{1F1FA} EUR €', id);
-
-    const usd = options.find((option) => option.value === 'USD');
-    assert.equal(usd.textContent, '\u{1F1FA}\u{1F1F8} USD $', id);
+    const byCode = (code) => rows.find((row) => row.code === code);
+    assert.equal(byCode('SEK').label, '\u{1F1F8}\u{1F1EA} SEK kr', id);
+    assert.equal(byCode('EUR').label, '\u{1F1EA}\u{1F1FA} EUR €', id);
+    assert.equal(byCode('USD').label, '\u{1F1FA}\u{1F1F8} USD $', id);
   });
 });
 
 test('a currency with no flag starts at its code, with nothing padded in', async () => {
   const document = await openPopup();
-  const options = [...document.getElementById('home-currency').options];
-  const xdr = options.find((option) => option.value === 'XDR');
-  assert.equal(xdr.textContent, 'XDR');
+  const xdr = rowsOf(document, 'home-currency').find((row) => row.code === 'XDR');
+  assert.equal(xdr.label, 'XDR');
 });
 
-test('the option value stays the bare code, so stored settings are unaffected', async () => {
-  // The flag is presentation only. If it ever leaked into the value, every
-  // homeCurrency written to storage would stop resolving.
+test('the picker value stays the bare code, so stored settings are unaffected', async () => {
+  // The flag and the country name are presentation only. If either leaked into
+  // the value, every homeCurrency written to storage would stop resolving.
   const document = await openPopup();
-  [...document.getElementById('home-currency').options].forEach((option) => {
-    if (!option.value) return;
-    assert.match(option.value, /^[A-Z]{3}$/);
+  rowsOf(document, 'home-currency').forEach((row) => {
+    if (!row.code) return;
+    assert.match(row.code, /^[A-Z]{3}$/);
   });
-  assert.equal(document.getElementById('home-currency').value, 'SEK');
+  const input = document.getElementById('home-currency');
+  assert.equal(input.value, '\u{1F1F8}\u{1F1EA} SEK kr', 'the field reads as a label');
+  input.blur();
+  assert.equal(input.value, '\u{1F1F8}\u{1F1EA} SEK kr');
 });
 
 test('the blank "Auto-detect" row is still there and still blank', async () => {
   const document = await openPopup();
-  const first = document.getElementById('site-currency').options[0];
-  assert.equal(first.value, '');
-  assert.equal(first.textContent, 'Auto-detect');
+  const first = rowsOf(document, 'site-currency')[0];
+  assert.equal(first.code, '');
+  assert.equal(first.label, 'Auto-detect');
 });

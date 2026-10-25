@@ -251,6 +251,7 @@ const SCRIPTS = [
   'lib/parser.js',
   'lib/calc.js',
   'lib/i18n.js',
+  'lib/search.js',
   'lib/rates.js',
   'popup/popup.js',
 ].map((file) => read(file));
@@ -403,9 +404,26 @@ test('switching the language leaves the income settings alone', async () => {
 
 test('the Swedish popup still shows flags, codes and symbols in the picker', async () => {
   const { document } = await openPopup('sv');
-  const options = [...document.getElementById('source-currency').options];
-  const sek = options.find((option) => option.value === 'SEK');
-  assert.equal(sek.textContent, '\u{1F1F8}\u{1F1EA} SEK kr', 'currency rows are language-neutral');
-  const blank = document.getElementById('site-currency').options[0];
-  assert.equal(blank.textContent, 'Identifiera automatiskt', 'but the blank row is translated');
+  document.getElementById('source-currency').focus();
+  const rows = [...document.querySelectorAll('#source-currency-list [role="option"]')];
+  const sek = rows.find((row) => row.dataset.code === 'SEK');
+  assert.equal(
+    sek.querySelector('.combo-label').textContent,
+    '\u{1F1F8}\u{1F1EA} SEK kr',
+    'the flag, code and symbol are language-neutral'
+  );
+  assert.equal(
+    sek.querySelector('.combo-description').textContent,
+    'Sverige',
+    'but the country name beside it follows the UI language'
+  );
+
+  document.getElementById('site-currency').focus();
+  const blank = document.querySelector('#site-currency-list [role="option"]');
+  assert.equal(blank.dataset.code, '');
+  assert.equal(
+    blank.querySelector('.combo-label').textContent,
+    'Identifiera automatiskt',
+    'and the blank row is translated'
+  );
 });

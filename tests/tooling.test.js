@@ -240,6 +240,7 @@ test('the popup loads every library it uses, in dependency order', () => {
     '../lib/parser.js',
     '../lib/calc.js',
     '../lib/i18n.js',
+    '../lib/search.js',
     '../lib/rates.js',
     'popup.js',
   ]);
