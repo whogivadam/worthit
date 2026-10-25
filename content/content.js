@@ -9,6 +9,7 @@
   const Currencies = globalThis.WorthItCurrencies;
   const Parser = globalThis.WorthItParser;
   const Calc = globalThis.WorthItCalc;
+  const I18n = globalThis.WorthItI18n;
   const Rates = globalThis.WorthItRates;
 
   const SETTINGS_KEY = 'settings';
@@ -44,11 +45,16 @@
     '[' + DONE_ATTR + ']',
   ].join(',');
 
-  const SOURCE_LABELS = {
+  // Proper names stay; the bundled snapshot is a description and gets translated.
+  const SOURCE_NAMES = {
     'er-api': 'ExchangeRate-API',
     frankfurter: 'Frankfurter (ECB)',
-    snapshot: 'bundled snapshot',
   };
+
+  function sourceLabel(source) {
+    if (source === 'snapshot') return I18n.t('rates.sourceSnapshot');
+    return SOURCE_NAMES[source] || source;
+  }
 
   // Built from the currency table's own space list rather than written out, so
   // no non-breaking space ends up pasted into this file as a literal.
@@ -102,12 +108,18 @@
   // --- badges ----------------------------------------------------------------
 
   function describeRate(sourceCode, homeCode) {
-    if (!state.cache) return 'no rates yet';
+    if (!state.cache) return I18n.t('rates.noneYetShort');
     const rate = Rates.effectiveRate(sourceCode, homeCode, state.cache.rates);
-    const label = SOURCE_LABELS[state.cache.source] || state.cache.source;
-    const when = state.cache.rateDate || 'unknown date';
-    if (rate === null) return `rate unavailable (${label}, ${when})`;
-    return `1 ${sourceCode} = ${rate.toPrecision(6)} ${homeCode} (${when}, ${label})`;
+    const label = sourceLabel(state.cache.source);
+    const when = state.cache.rateDate || I18n.t('rates.unknownDateLong');
+    if (rate === null) return I18n.t('rates.unavailable', { source: label, date: when });
+    return I18n.t('rates.rateLine', {
+      from: sourceCode,
+      rate: rate.toPrecision(6),
+      to: homeCode,
+      date: when,
+      source: label,
+    });
   }
 
   function makeBadge(label, tooltip) {
@@ -123,10 +135,10 @@
    * what the spec asks for when a currency is unknown.
    */
   function unknownBadge(price) {
-    const what = price.currency || 'this currency';
+    const what = price.currency || I18n.t('badge.thisCurrency');
     return makeBadge(
       '?',
-      `Worth It?\n${price.raw}\nNo exchange rate for ${what}, so this is not converted.`,
+      ['Worth It?', price.raw, I18n.t('badge.noRate', { what: what })].join('\n'),
     );
   }
 
@@ -153,14 +165,14 @@
       'Worth It?',
       price.raw.trim(),
       converted ? `= ${converted}` : null,
-      `= ${Calc.formatHoursMinutes(totalHours)} of your work`,
+      I18n.t('badge.ofYourWork', { time: I18n.formatHoursMinutes(totalHours) }),
       // Only worth saying when a conversion actually happened.
       converted ? describeRate(price.currency, home) : null,
     ]
       .filter(Boolean)
       .join('\n');
 
-    return makeBadge(Calc.formatBadge(totalHours, state.settings.hoursPerWeek), tooltip);
+    return makeBadge(I18n.formatBadge(totalHours, state.settings.hoursPerWeek), tooltip);
   }
 
   // --- scanning --------------------------------------------------------------
@@ -353,6 +365,9 @@
     state.site = siteFor(stored[SITES_KEY]);
     state.cache = stored[Rates.STORAGE_KEY] || null;
     state.context = buildContext();
+    // Language lives inside settings, so the storage watcher below already
+    // re-badges the page when it changes -- same path as a currency change.
+    I18n.setLanguage(state.settings && state.settings.language);
     recomputeEnabled();
   }
 

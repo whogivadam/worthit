@@ -71,65 +71,88 @@ test('minutes are rounded, and a rounded 60 carries into the hour', () => {
   assert.deepEqual(calc.splitHoursMinutes(-1), { hours: 0, minutes: 0 });
 });
 
-test('the headline figure reads as hours and minutes', () => {
-  assert.equal(calc.formatHoursMinutes(2.5), '2 h 30 min');
-  assert.equal(calc.formatHoursMinutes(3), '3 h');
-  assert.equal(calc.formatHoursMinutes(0.25), '15 min');
-  assert.equal(calc.formatHoursMinutes(0), '0 min');
+// These assert the shape calc returns, not the wording: the strings live in
+// lib/i18n.js and are covered by tests/i18n.test.js, which renders these same
+// keys in both languages.
+test('the headline figure picks the right form for hours and minutes', () => {
+  assert.deepEqual(calc.durationParts(2.5), {
+    key: 'time.hoursMinutes',
+    hours: 2,
+    minutes: 30,
+  });
+  assert.deepEqual(calc.durationParts(3), { key: 'time.hours', hours: 3 });
+  assert.deepEqual(calc.durationParts(0.25), { key: 'time.minutes', minutes: 15 });
+  assert.deepEqual(calc.durationParts(0), { key: 'time.minutes', minutes: 0 });
 });
 
 test('the badge is compact, and switches to days past one workday', () => {
-  assert.equal(calc.formatBadge(3.75, 40), '3h45m');
-  assert.equal(calc.formatBadge(3, 40), '3h');
-  assert.equal(calc.formatBadge(0.75, 40), '45m');
+  assert.deepEqual(calc.badgeParts(3.75, 40), {
+    key: 'badge.hoursMinutes',
+    hours: 3,
+    minutes: 45,
+  });
+  assert.deepEqual(calc.badgeParts(3, 40), { key: 'badge.hours', hours: 3 });
+  assert.deepEqual(calc.badgeParts(0.75, 40), { key: 'badge.minutes', minutes: 45 });
   // exactly one workday is already a day
-  assert.equal(calc.formatBadge(8, 40), '1d');
-  assert.equal(calc.formatBadge(20, 40), '2.5d');
-  assert.equal(calc.formatBadge(7.99, 40), '7h59m');
+  assert.deepEqual(calc.badgeParts(8, 40), { key: 'badge.days', days: 1 });
+  assert.deepEqual(calc.badgeParts(20, 40), { key: 'badge.days', days: 2.5 });
+  assert.deepEqual(calc.badgeParts(7.99, 40), {
+    key: 'badge.hoursMinutes',
+    hours: 7,
+    minutes: 59,
+  });
   // ten days and over drop the decimal
-  assert.equal(calc.formatBadge(80, 40), '10d');
-  assert.equal(calc.formatBadge(100, 40), '13d');
+  assert.deepEqual(calc.badgeParts(80, 40), { key: 'badge.days', days: 10 });
+  assert.deepEqual(calc.badgeParts(100, 40), { key: 'badge.days', days: 13 });
   // a 20-hour week has a 4-hour workday, so the switch comes sooner
-  assert.equal(calc.formatBadge(5, 20), '1.3d');
-  assert.equal(calc.formatBadge(3.75, 20), '3h45m');
-  assert.equal(calc.formatBadge(NaN, 40), '?');
+  assert.deepEqual(calc.badgeParts(5, 20), { key: 'badge.days', days: 1.3 });
+  assert.deepEqual(calc.badgeParts(3.75, 20), {
+    key: 'badge.hoursMinutes',
+    hours: 3,
+    minutes: 45,
+  });
+  // still a key, so it renders as '?' rather than as an empty badge
+  assert.deepEqual(calc.badgeParts(NaN, 40), { key: 'badge.unknown' });
 });
 
 test('each framing threshold holds on both sides', () => {
   const week = 40;
   const workday = 8;
 
+  const key = (hours, hoursPerWeek) => calc.framing(hours, hoursPerWeek).key;
+
   // < 0.10 workdays
-  assert.equal(calc.framing(0.79, week), 'A coffee break');
+  assert.equal(key(0.79, week), 'framing.coffeeBreak');
   // < 0.35
-  assert.equal(calc.framing(0.8, week), 'A quick errand');
-  assert.equal(calc.framing(2.79, week), 'A quick errand');
+  assert.equal(key(0.8, week), 'framing.quickErrand');
+  assert.equal(key(2.79, week), 'framing.quickErrand');
   // < 0.65
-  assert.equal(calc.framing(2.8, week), 'Half your workday');
-  assert.equal(calc.framing(5.19, week), 'Half your workday');
+  assert.equal(key(2.8, week), 'framing.halfWorkday');
+  assert.equal(key(5.19, week), 'framing.halfWorkday');
   // < 1.20
-  assert.equal(calc.framing(5.2, week), 'Your whole Tuesday');
-  assert.equal(calc.framing(9.59, week), 'Your whole Tuesday');
-  // < 0.60 work weeks
-  assert.equal(calc.framing(9.6, week), '1.2 days of your life');
-  assert.equal(calc.framing(23.9, week), '3 days of your life');
+  assert.equal(key(5.2, week), 'framing.wholeWorkday');
+  assert.equal(key(9.59, week), 'framing.wholeWorkday');
+  // < 0.60 work weeks, and the number comes with the key
+  assert.deepEqual(calc.framing(9.6, week), { key: 'framing.daysOfLife', days: 1.2 });
+  assert.deepEqual(calc.framing(23.9, week), { key: 'framing.daysOfLife', days: 3 });
   // < 1.20 work weeks
-  assert.equal(calc.framing(24, week), 'Your whole work week');
-  assert.equal(calc.framing(47.9, week), 'Your whole work week');
+  assert.equal(key(24, week), 'framing.wholeWorkWeek');
+  assert.equal(key(47.9, week), 'framing.wholeWorkWeek');
   // beyond
-  assert.equal(calc.framing(48, week), '1.2 work weeks');
-  assert.equal(calc.framing(100, week), '2.5 work weeks');
+  assert.deepEqual(calc.framing(48, week), { key: 'framing.workWeeks', weeks: 1.2 });
+  assert.deepEqual(calc.framing(100, week), { key: 'framing.workWeeks', weeks: 2.5 });
 
   // the ladder is in workdays, so a 20-hour week moves every boundary
-  assert.equal(calc.framing(0.79, 20), 'A quick errand');
-  assert.equal(calc.framing(2.8, 20), 'Your whole Tuesday');
+  assert.equal(key(0.79, 20), 'framing.quickErrand');
+  assert.equal(key(2.8, 20), 'framing.wholeWorkday');
   assert.equal(calc.workdayHours(20), workday / 2);
 });
 
 test('framing refuses to guess without usable settings', () => {
-  assert.equal(calc.framing(5, 0), '');
-  assert.equal(calc.framing(NaN, 40), '');
-  assert.equal(calc.framing(-1, 40), '');
+  // null, not a key: there is nothing honest to say, and render() draws nothing.
+  assert.equal(calc.framing(5, 0), null);
+  assert.equal(calc.framing(NaN, 40), null);
+  assert.equal(calc.framing(-1, 40), null);
 });
 
 test('the workday bar fills proportionally', () => {
@@ -164,7 +187,15 @@ test('a worked example holds end to end', () => {
   const time = calc.priceToTime(1299, rate);
   assert.equal(time.hours, 7);
   assert.equal(time.minutes, 30);
-  assert.equal(calc.formatHoursMinutes(time.totalHours), '7 h 30 min');
-  assert.equal(calc.formatBadge(time.totalHours, 40), '7h30m');
-  assert.equal(calc.framing(time.totalHours, 40), 'Your whole Tuesday');
+  assert.deepEqual(calc.durationParts(time.totalHours), {
+    key: 'time.hoursMinutes',
+    hours: 7,
+    minutes: 30,
+  });
+  assert.deepEqual(calc.badgeParts(time.totalHours, 40), {
+    key: 'badge.hoursMinutes',
+    hours: 7,
+    minutes: 30,
+  });
+  assert.equal(calc.framing(time.totalHours, 40).key, 'framing.wholeWorkday');
 });

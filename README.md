@@ -37,8 +37,12 @@ On first run the popup asks for your income once, and never asks again:
 - a monthly after-tax salary, or an hourly after-tax rate
 - hours worked per week (40 by default)
 - your home currency, pre-filled from your browser locale
+- the interface language, English or Swedish, pre-filled from your browser language
 
 The hourly rate is `monthly / (hours_per_week * 52 / 12)`.
+
+Changing the language takes effect at once, in the popup and in the badges already on the page, and
+is saved as you pick it rather than on **SAVE**.
 
 From the popup you can also turn the page overlay off, disable the extension on the site you are
 looking at, or force a particular currency on that site when its prices are ambiguous.

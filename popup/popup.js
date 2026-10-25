@@ -8,6 +8,7 @@
   const Currencies = globalThis.WorthItCurrencies;
   const Parser = globalThis.WorthItParser;
   const Calc = globalThis.WorthItCalc;
+  const I18n = globalThis.WorthItI18n;
   const Rates = globalThis.WorthItRates;
 
   const SETTINGS_KEY = 'settings';
@@ -16,11 +17,17 @@
   const HISTORY_LIMIT = 20;
   const DEBOUNCE_MS = 500;
 
-  const SOURCE_LABELS = {
+  // ExchangeRate-API and Frankfurter are proper names and stay as they are; the
+  // bundled snapshot is a description and gets translated.
+  const SOURCE_NAMES = {
     'er-api': 'ExchangeRate-API',
     frankfurter: 'Frankfurter (ECB)',
-    snapshot: 'bundled snapshot',
   };
+
+  function sourceLabel(source) {
+    if (source === 'snapshot') return I18n.t('rates.sourceSnapshot');
+    return SOURCE_NAMES[source] || source;
+  }
 
   const $ = (id) => document.getElementById(id);
 
@@ -45,6 +52,7 @@
       hoursPerWeek: 40,
       homeCurrency: Currencies.currencyForLocale(navigator.language) || 'USD',
       overlayEnabled: true,
+      language: I18n.resolve(null, navigator.language),
     };
   }
 
@@ -59,6 +67,7 @@
     state.sites = stored[SITES_KEY] || {};
     state.history = Array.isArray(stored[HISTORY_KEY]) ? stored[HISTORY_KEY] : [];
     state.cache = stored[Rates.STORAGE_KEY] || null;
+    I18n.setLanguage(state.settings.language);
   }
 
   function save(key, value) {
@@ -95,6 +104,33 @@
   // The code stays in the label, so a row is still identifiable where the flag does
   // not draw -- see flagFor() on what Windows does. Rows without a flag start at the
   // code; nothing is padded in, since the fallback width differs per platform anyway.
+  /**
+   * Applies the string table to the markup: data-i18n sets text, the two
+   * data-i18n-* attributes set theirs. Runs on open and again on every language
+   * change, so nothing has to be re-created to switch language.
+   */
+  function applyTranslations() {
+    document.documentElement.lang = I18n.language();
+    document.querySelectorAll('[data-i18n]').forEach((element) => {
+      element.textContent = I18n.t(element.dataset.i18n);
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach((element) => {
+      element.setAttribute('title', I18n.t(element.dataset.i18nTitle));
+    });
+    document.querySelectorAll('[data-i18n-aria-label]').forEach((element) => {
+      element.setAttribute('aria-label', I18n.t(element.dataset.i18nAriaLabel));
+    });
+  }
+
+  function fillLanguageSelect() {
+    const select = $('language');
+    select.replaceChildren();
+    I18n.LANGUAGES.forEach((code) => {
+      select.append(option(code, I18n.nameOf(code)));
+    });
+    select.value = I18n.language();
+  }
+
   function fillCurrencySelect(select, selected, blankLabel) {
     select.replaceChildren();
     if (blankLabel) select.append(option('', blankLabel));
@@ -152,7 +188,8 @@
       block.append(inner);
       blocks.append(block);
     });
-    $('overflow').textContent = bar.overflowDays > 0 ? `+${bar.overflowDays} days` : '';
+    $('overflow').textContent =
+      bar.overflowDays > 0 ? I18n.t('result.overflowDays', { days: bar.overflowDays }) : '';
   }
 
   function runCheck() {
@@ -170,8 +207,7 @@
     if (amountHome === null) {
       $('result').hidden = true;
       $('no-rate').hidden = false;
-      $('no-rate').textContent =
-        `No rate for ${input.currency} yet. Try Refresh, or pick another currency.`;
+      $('no-rate').textContent = I18n.t('rates.noRateFor', { code: input.currency });
       state.lastResult = null;
       return;
     }
@@ -184,8 +220,10 @@
       return;
     }
 
-    $('time').textContent = Calc.formatHoursMinutes(time.totalHours);
-    $('framing').textContent = Calc.framing(time.totalHours, state.settings.hoursPerWeek);
+    $('time').textContent = I18n.formatHoursMinutes(time.totalHours);
+    $('framing').textContent = I18n.render(
+      Calc.framing(time.totalHours, state.settings.hoursPerWeek)
+    );
     renderBlocks(time.totalHours);
     $('result').hidden = false;
 
@@ -229,7 +267,7 @@
 
     $('history-empty').hidden = state.history.length > 0;
     $('total').textContent = state.history.length
-      ? `${Calc.formatHoursMinutes(totalHours)} total`
+      ? I18n.t('history.total', { time: I18n.formatHoursMinutes(totalHours) })
       : '';
 
     list.replaceChildren();
@@ -238,7 +276,7 @@
       const price = document.createElement('span');
       price.textContent = entry.rawInput + ' ' + entry.srcCurrency;
       const time = document.createElement('span');
-      time.textContent = Calc.formatBadge(entry.totalHours, state.settings.hoursPerWeek);
+      time.textContent = I18n.formatBadge(entry.totalHours, state.settings.hoursPerWeek);
       row.append(price, time);
       list.append(row);
     });
@@ -249,12 +287,14 @@
   function renderRateStatus() {
     const line = $('rate-status');
     if (!state.cache || !state.cache.rates) {
-      line.textContent = 'No rates yet';
+      line.textContent = I18n.t('rates.none');
       line.classList.add('warn');
       return;
     }
-    const label = SOURCE_LABELS[state.cache.source] || state.cache.source;
-    line.textContent = `Rates updated ${state.cache.rateDate || 'unknown'} · ${label}`;
+    line.textContent = I18n.t('rates.updated', {
+      date: state.cache.rateDate || I18n.t('rates.unknownDate'),
+      source: sourceLabel(state.cache.source),
+    });
     line.classList.toggle('warn', Rates.isWarnState(state.cache));
   }
 
@@ -285,7 +325,7 @@
     const site = siteSettings(state.host);
     $('site-host').textContent = state.host;
     $('site-disabled').checked = Boolean(site.disabled);
-    fillCurrencySelect($('site-currency'), site.forceCurrency || '', 'Auto-detect');
+    fillCurrencySelect($('site-currency'), site.forceCurrency || '', I18n.t('site.autoDetect'));
   }
 
   async function updateSite(changes) {
@@ -323,6 +363,7 @@
     $('hours-per-week').value = String(state.settings.hoursPerWeek);
     $('overlay-enabled').checked = state.settings.overlayEnabled !== false;
     fillCurrencySelect($('home-currency'), state.settings.homeCurrency, null);
+    fillLanguageSelect();
   }
 
   function readNumber(text) {
@@ -344,14 +385,13 @@
       hoursPerWeek: readNumber($('hours-per-week').value) || 40,
       homeCurrency: $('home-currency').value || 'USD',
       overlayEnabled: $('overlay-enabled').checked,
+      language: state.settings.language,
     };
 
     if (Calc.hourlyRate(candidate) <= 0) {
       $('settings-error').hidden = false;
       $('settings-error').textContent =
-        mode === 'hourly'
-          ? 'Enter an hourly rate above zero.'
-          : 'Enter a monthly income above zero, and hours per week.';
+        mode === 'hourly' ? I18n.t('settings.errorHourly') : I18n.t('settings.errorMonthly');
       return;
     }
 
@@ -383,15 +423,15 @@
       if (!state.lastResult) return;
       const result = state.lastResult;
       const price = `${result.rawInput} ${result.srcCurrency}`;
-      const time = Calc.formatHoursMinutes(result.totalHours);
+      const time = I18n.formatHoursMinutes(result.totalHours);
       try {
-        await navigator.clipboard.writeText(`${price} = ${time} of my life. Worth it?`);
-        $('share').textContent = 'COPIED';
+        await navigator.clipboard.writeText(I18n.t('share.clipboard', { price, time }));
+        $('share').textContent = I18n.t('result.copied');
         window.setTimeout(() => {
-          $('share').textContent = 'COPY';
+          $('share').textContent = I18n.t('result.copy');
         }, 1200);
       } catch {
-        $('share').textContent = 'COPY FAILED';
+        $('share').textContent = I18n.t('result.copyFailed');
       }
     });
 
@@ -418,7 +458,23 @@
       }
       renderRateStatus();
       runCheck();
-      $('refresh').textContent = 'REFRESH';
+      $('refresh').textContent = I18n.t('rates.refresh');
+    });
+
+    // Saved on change rather than on SAVE. It is a display preference, not part
+    // of the income the SAVE button validates, and switching it has to show the
+    // result at once -- leaving it unsaved would mean BACK silently reverting a
+    // language the user is already reading.
+    $('language').addEventListener('change', async (event) => {
+      const language = I18n.setLanguage(event.target.value);
+      state.settings = Object.assign({}, state.settings, { language: language });
+      await save(SETTINGS_KEY, state.settings);
+      applyTranslations();
+      fillLanguageSelect();
+      renderHistory();
+      renderRateStatus();
+      renderSite();
+      runCheck();
     });
 
     $('open-settings').addEventListener('click', () => showSettings(false));
@@ -437,6 +493,7 @@
   async function start() {
     await load();
     state.host = await readActiveHost();
+    applyTranslations();
     wire();
     if (isConfigured(state.settings)) {
       showMain();

@@ -156,6 +156,7 @@ const SCRIPTS = [
   'lib/currencies.js',
   'lib/parser.js',
   'lib/calc.js',
+  'lib/i18n.js',
   'lib/rates.js',
   'popup/popup.js',
 ].map((file) => fs.readFileSync(path.join(root, file), 'utf8'));
