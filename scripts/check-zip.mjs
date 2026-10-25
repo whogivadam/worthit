@@ -11,8 +11,24 @@ import path from 'node:path';
 const ARTIFACTS = 'web-ext-artifacts';
 
 const ALLOWED_FILES = new Set(['manifest.json', 'LICENSE']);
-const ALLOWED_DIRECTORIES = ['icons/', 'background/', 'popup/', 'content/', 'lib/'];
-const REQUIRED = ['manifest.json', 'LICENSE', 'lib/rates-snapshot.json'];
+const ALLOWED_DIRECTORIES = [
+  'icons/',
+  'background/',
+  'popup/',
+  'content/',
+  'lib/',
+  '_locales/',
+];
+// Every locale the manifest's __MSG_*__ placeholders can resolve against. A
+// missing default_locale file makes the extension fail to load outright, so it
+// is required rather than merely allowed.
+const REQUIRED = [
+  'manifest.json',
+  'LICENSE',
+  'lib/rates-snapshot.json',
+  '_locales/en/messages.json',
+  '_locales/sv/messages.json',
+];
 
 /** Entry names from a zip's central directory. */
 function readZipEntries(file) {

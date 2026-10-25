@@ -6,9 +6,15 @@
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
+    <!--
+      Text the user reads is tagged rather than written here: data-i18n sets
+      textContent, data-i18n-title and data-i18n-aria-label set those attributes.
+      popup.js applies them on open and again whenever the language changes, so
+      the markup carries no English. "WORTH IT?" is the product name and stays.
+    -->
     <header class="bar">
       <h1>WORTH IT?</h1>
-      <button id="open-settings" class="icon" type="button" title="Settings">SETTINGS</button>
+      <button id="open-settings" class="icon" type="button" data-i18n-title="nav.settingsTitle" data-i18n="nav.settings"></button>
     </header>
 
     <!-- Manual check -->
@@ -21,41 +27,41 @@
           inputmode="decimal"
           autocomplete="off"
           placeholder="0"
-          aria-label="Price"
+          data-i18n-aria-label="price.label"
         />
-        <select id="source-currency" aria-label="Currency of this price"></select>
+        <select id="source-currency" data-i18n-aria-label="price.currencyLabel"></select>
       </div>
 
       <section id="result" class="result" hidden>
         <p id="time" class="huge">&nbsp;</p>
-        <p class="of-your-life">of your life</p>
+        <p class="of-your-life" data-i18n="result.ofYourLife"></p>
         <p id="framing" class="framing"></p>
         <div id="blocks" class="blocks" aria-hidden="true"></div>
         <p id="overflow" class="overflow"></p>
-        <button id="share" class="wide" type="button">COPY</button>
+        <button id="share" class="wide" type="button" data-i18n="result.copy"></button>
       </section>
 
       <p id="no-rate" class="warn-box" hidden></p>
 
       <section class="panel">
         <h2>
-          HISTORY
+          <span data-i18n="history.title"></span>
           <span id="total" class="total"></span>
         </h2>
         <ol id="history-list" class="history"></ol>
-        <p id="history-empty" class="muted">Nothing checked yet.</p>
-        <button id="clear" class="wide ghost" type="button">CLEAR HISTORY</button>
+        <p id="history-empty" class="muted" data-i18n="history.empty"></p>
+        <button id="clear" class="wide ghost" type="button" data-i18n="history.clear"></button>
       </section>
 
       <section class="panel" id="site-panel">
-        <h2>THIS SITE</h2>
+        <h2 data-i18n="site.title"></h2>
         <p id="site-host" class="muted"></p>
         <label class="check">
           <input id="site-disabled" type="checkbox" />
-          <span>Disable on this site</span>
+          <span data-i18n="site.disable"></span>
         </label>
         <label class="field">
-          <span>Force currency on this site</span>
+          <span data-i18n="site.forceCurrency"></span>
           <select id="site-currency"></select>
         </label>
       </section>
@@ -68,69 +74,73 @@
             href="https://www.exchangerate-api.com"
             target="_blank"
             rel="noreferrer"
-            >Rates by ExchangeRate-API</a
-          >
+            data-i18n="rates.attribution"
+          ></a>
         </div>
-        <button id="refresh" class="icon" type="button">REFRESH</button>
+        <button id="refresh" class="icon" type="button" data-i18n="rates.refresh"></button>
       </footer>
     </main>
 
     <!-- Settings. Shown automatically on first run, and never again once saved. -->
     <section id="view-settings" hidden>
-      <p id="first-run" class="lead" hidden>
-        One thing first: what do you earn after tax? It stays on this machine.
-      </p>
+      <p id="first-run" class="lead" hidden data-i18n="settings.firstRun"></p>
 
       <fieldset>
-        <legend>INCOME</legend>
+        <legend data-i18n="settings.income"></legend>
         <label class="radio">
           <input type="radio" name="income-mode" value="monthly" />
-          <span>Monthly, after tax</span>
+          <span data-i18n="settings.monthly"></span>
         </label>
         <input
           id="monthly"
           type="text"
           inputmode="decimal"
           autocomplete="off"
-          aria-label="Monthly after-tax income"
+          data-i18n-aria-label="settings.monthlyLabel"
         />
         <label class="radio">
           <input type="radio" name="income-mode" value="hourly" />
-          <span>Hourly, after tax</span>
+          <span data-i18n="settings.hourly"></span>
         </label>
         <input
           id="hourly"
           type="text"
           inputmode="decimal"
           autocomplete="off"
-          aria-label="Hourly after-tax rate"
+          data-i18n-aria-label="settings.hourlyLabel"
         />
       </fieldset>
 
       <label class="field">
-        <span>Hours worked per week</span>
+        <span data-i18n="settings.hoursPerWeek"></span>
         <input id="hours-per-week" type="text" inputmode="decimal" autocomplete="off" />
       </label>
 
       <label class="field">
-        <span>Home currency</span>
+        <span data-i18n="settings.homeCurrency"></span>
         <select id="home-currency"></select>
+      </label>
+
+      <label class="field">
+        <span data-i18n="settings.language"></span>
+        <select id="language"></select>
       </label>
 
       <label class="check">
         <input id="overlay-enabled" type="checkbox" />
-        <span>Show badges next to prices on pages</span>
+        <span data-i18n="settings.showBadges"></span>
       </label>
 
       <p id="settings-error" class="warn-box" hidden></p>
 
-      <button id="save-settings" class="wide" type="button">SAVE</button>
-      <button id="cancel-settings" class="wide ghost" type="button" hidden>BACK</button>
+      <button id="save-settings" class="wide" type="button" data-i18n="settings.save"></button>
+      <button id="cancel-settings" class="wide ghost" type="button" hidden data-i18n="settings.back"></button>
     </section>
 
     <script src="../lib/currencies.js"></script>
     <script src="../lib/parser.js"></script>
     <script src="../lib/calc.js"></script>
+    <script src="../lib/i18n.js"></script>
     <script src="../lib/rates.js"></script>
     <script src="popup.js"></script>
   </body>

@@ -216,10 +216,20 @@ test('the popup builds nodes instead of assigning markup', () => {
   assert.match(script, /replaceChildren\(/, 'expected DOM construction');
 });
 
-test('the popup ships the required rate attribution', () => {
+test('the popup ships the required rate attribution, in every language', () => {
+  // ExchangeRate-API's free tier requires the attribution link, so it is not
+  // something a translation may quietly drop. The link lives in the markup; the
+  // text it carries now comes from the string table, once per language.
   const markup = read('popup/popup.html');
-  assert.match(markup, /Rates by ExchangeRate-API/);
   assert.match(markup, /href="https:\/\/www\.exchangerate-api\.com"/);
+  assert.match(markup, /data-i18n="rates\.attribution"/);
+
+  const i18n = require('../lib/i18n.js');
+  i18n.LANGUAGES.forEach((language) => {
+    const text = i18n.MESSAGES[language]['rates.attribution'];
+    assert.ok(text, `${language} is missing rates.attribution`);
+    assert.match(text, /ExchangeRate-API/, `${language} must name ExchangeRate-API`);
+  });
 });
 
 test('the popup loads every library it uses, in dependency order', () => {
@@ -229,6 +239,7 @@ test('the popup loads every library it uses, in dependency order', () => {
     '../lib/currencies.js',
     '../lib/parser.js',
     '../lib/calc.js',
+    '../lib/i18n.js',
     '../lib/rates.js',
     'popup.js',
   ]);

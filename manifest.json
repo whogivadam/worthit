@@ -1,15 +1,16 @@
 {
   "manifest_version": 3,
-  "name": "Worth It?",
+  "name": "__MSG_extensionName__",
   "version": "0.2.0",
-  "description": "Turn any price into the hours of work it costs you, in the popup and next to prices on any shop.",
+  "default_locale": "en",
+  "description": "__MSG_extensionDescription__",
   "icons": {
     "48": "icons/icon-48.png",
     "96": "icons/icon-96.png"
   },
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "Worth It?",
+    "default_title": "__MSG_actionTitle__",
     "default_icon": {
       "48": "icons/icon-48.png",
       "96": "icons/icon-96.png"
@@ -40,6 +41,7 @@
         "lib/currencies.js",
         "lib/parser.js",
         "lib/calc.js",
+        "lib/i18n.js",
         "lib/rates.js",
         "content/content.js"
       ],

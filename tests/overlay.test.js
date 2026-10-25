@@ -17,6 +17,7 @@ const SCRIPTS = [
   'lib/currencies.js',
   'lib/parser.js',
   'lib/calc.js',
+  'lib/i18n.js',
   'lib/rates.js',
   'content/content.js',
 ].map((file) => fs.readFileSync(path.join(root, file), 'utf8'));
@@ -257,6 +258,37 @@ test('switching the overlay off removes the badges without a reload', async () =
 
   await page.change({ settings: DEFAULT_STORED.settings });
   assert.equal(page.badges().length, 1);
+});
+
+test('switching the language re-badges the page without a reload', async () => {
+  // Language lives inside settings, so it takes the same path a currency change
+  // does: every badge is removed and the page rescanned. Nothing is patched in
+  // place, which is what keeps the units and the tooltip consistent.
+  const page = await mount('<p>1 299 kr</p>');
+  assert.deepEqual(page.labels(), ['7h30m']);
+  assert.match(page.badges()[0].getAttribute('title'), /of your work/);
+
+  await page.change({
+    settings: Object.assign({}, DEFAULT_STORED.settings, { language: 'sv' }),
+  });
+  assert.deepEqual(page.labels(), ['7t30m'], 'the badge unit is Swedish');
+  const title = page.badges()[0].getAttribute('title');
+  assert.match(title, /7 tim 30 min av ditt arbete/);
+  assert.doesNotMatch(title, /of your work/);
+
+  await page.change({ settings: DEFAULT_STORED.settings });
+  assert.deepEqual(page.labels(), ['7h30m'], 'and back again');
+});
+
+test('an unconvertible price says so in the reader language', async () => {
+  // ZWL is in the currency table but not in this rate cache, as above.
+  const page = await mount('<p>Pris 500 ZWL</p>', {
+    settings: Object.assign({}, DEFAULT_STORED.settings, { language: 'sv' }),
+  });
+  const badges = page.badges();
+  assert.equal(badges.length, 1);
+  assert.equal(badges[0].textContent, '?', 'the symbol is language-neutral');
+  assert.match(badges[0].getAttribute('title'), /Ingen växelkurs för ZWL/);
 });
 
 test('disabling this site removes the badges without a reload', async () => {
