@@ -89,6 +89,12 @@
     return element;
   }
 
+  // Each row reads '<flag> CODE <symbol>'. The flag is the fastest way to find your
+  // own currency in 162 rows, and the only cue that works without knowing ISO 4217:
+  // the symbol does not disambiguate, with 'kr' shared four ways and '$' a dozen.
+  // The code stays in the label, so a row is still identifiable where the flag does
+  // not draw -- see flagFor() on what Windows does. Rows without a flag start at the
+  // code; nothing is padded in, since the fallback width differs per platform anyway.
   function fillCurrencySelect(select, selected, blankLabel) {
     select.replaceChildren();
     if (blankLabel) select.append(option('', blankLabel));
@@ -96,7 +102,10 @@
       const symbol = currency.symbols.length
         ? ' ' + currency.symbols[currency.symbols.length - 1]
         : '';
-      select.append(option(currency.code, currency.code + symbol));
+      const flag = Currencies.flagFor(currency.region);
+      select.append(
+        option(currency.code, (flag ? flag + ' ' : '') + currency.code + symbol)
+      );
     });
     select.value = selected || '';
   }
