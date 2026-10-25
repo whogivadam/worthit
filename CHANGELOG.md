@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0](https://github.com/whogivadam/worthit/compare/v0.1.0...v0.2.0) (2026-10-25)
+
+
+### Features
+
+* **popup:** show a country flag beside every currency ([#40](https://github.com/whogivadam/worthit/issues/40)) ([1d63e63](https://github.com/whogivadam/worthit/commit/1d63e637daed7f581c2cfd6214499b69238d3d68))
+
+
+### Bug Fixes
+
+* **ci:** allow re-submitting a version to AMO ([#36](https://github.com/whogivadam/worthit/issues/36)) ([242e564](https://github.com/whogivadam/worthit/commit/242e56439106e33d0d4122d8dee76ccdb74cd356))
+
 ## 0.1.0 (2026-10-21)
 
 
