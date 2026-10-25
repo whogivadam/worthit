@@ -65,8 +65,12 @@ jobs:
         run: gh release upload "$TAG" web-ext-artifacts/*.zip --clobber
 
       # Submits the version to AMO for review. Users install from the AMO listing.
-      # If this step fails, the release itself is already published; use the
-      # workflow_dispatch path above to submit it again.
+      # --approval-timeout=0 in the sign script returns once Mozilla accepts the
+      # upload, rather than blocking until a human reviewer approves it: review
+      # takes days, so waiting on it only ever times out and reports a submission
+      # that worked as a failure. Approval arrives by email and the listing goes
+      # live on its own. If this step does fail the release is already published,
+      # so use the workflow_dispatch path above to submit the same tag again.
       - name: Submit to AMO for review
         if: ${{ steps.release.outputs.release_created }}
         env:

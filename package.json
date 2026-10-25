@@ -20,7 +20,7 @@
     "test": "node --test tests/*.test.js",
     "lint": "eslint .",
     "build": "web-ext build",
-    "sign": "web-ext sign --channel=listed --amo-metadata=amo-metadata.json",
+    "sign": "web-ext sign --channel=listed --amo-metadata=amo-metadata.json --approval-timeout=0",
     "snapshot": "node scripts/build-snapshot.js",
     "check-zip": "node scripts/check-zip.mjs",
     "check-privacy": "node scripts/check-privacy.mjs",
