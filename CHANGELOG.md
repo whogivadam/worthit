@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0](https://github.com/whogivadam/worthit/compare/v0.2.0...v0.3.0) (2026-10-25)
+
+
+### Features
+
+* **popup:** add a language setting and a Swedish translation ([#43](https://github.com/whogivadam/worthit/issues/43)) ([59f262b](https://github.com/whogivadam/worthit/commit/59f262b722ad4ba50f31cf382522fde77d68328e))
+* **popup:** make the currency picker searchable by code or country ([#46](https://github.com/whogivadam/worthit/issues/46)) ([c17d644](https://github.com/whogivadam/worthit/commit/c17d644a728f23a60cdb7d605ba632e347a6b39e))
+
+
+### Documentation
+
+* **repo:** drop the pre-launch note from the install section ([#41](https://github.com/whogivadam/worthit/issues/41)) ([8c50112](https://github.com/whogivadam/worthit/commit/8c50112c80762c363fd2ee8e9079e77e09fa6465))
+
 ## [0.2.0](https://github.com/whogivadam/worthit/compare/v0.1.0...v0.2.0) (2026-10-25)
 
 
