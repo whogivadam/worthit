@@ -18,7 +18,6 @@ A price is a number until you know what it costs you. Hours are harder to ignore
 
 - **Users** — install from addons.mozilla.org:
   <https://addons.mozilla.org/firefox/addon/worth-it/>
-  *(the listing goes live with v0.1.0; until then use the development install below)*
 
 - **Development** — load it temporarily, no build step needed:
   1. clone this repository
