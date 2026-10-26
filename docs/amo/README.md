@@ -136,3 +136,31 @@ The privacy section is over half the description and states facts that
 `npm run check-privacy` and the manifest enforce. A translation that softened or
 dropped one of them would be an inaccurate claim on a public page, so each claim
 is pinned to a phrase that has to survive translation.
+
+## Checking the listing afterwards
+
+Two things about how AMO behaves, both established by watching `v0.3.1` go out on
+2026-10-26, and both easy to misread.
+
+**Metadata applies the moment it is submitted, not when the version is approved.**
+The Swedish listing was live while `0.3.1` was still sitting in the review queue
+and `0.3.0` was still the public version. Only the extension code waits for a
+reviewer; `name`, `summary` and `description` do not. So a mistake in the listing
+text is public immediately and cannot be caught by a reviewer on its way through.
+
+**AMO merges localised fields; it does not replace them.** Submitting a
+`summary` carrying `en-US` and `sv-SE` left both in place, and submitting one
+locale does not blank the others. That was worth confirming, because the opposite
+would have meant a partial `amo-metadata.json` silently wiping the English.
+
+**Query without `?lang=`**, or the answer will mislead you:
+
+```sh
+curl -s "https://addons.mozilla.org/api/v5/addons/addon/worth-it/" \
+  | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['summary'])"
+```
+
+With `?lang=sv-SE` the API returns *only* that locale and reports every other as
+`null`, which reads exactly like the English having been destroyed. It has not
+been; the request simply asked for one language. Without the parameter, every
+locale that is really set comes back.
