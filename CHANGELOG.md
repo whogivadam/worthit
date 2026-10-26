@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.1](https://github.com/whogivadam/worthit/compare/v0.3.0...v0.3.1) (2026-10-26)
+
+
+### Bug Fixes
+
+* **parser:** stop reading clock times as Swedish prices ([#51](https://github.com/whogivadam/worthit/issues/51)) ([543e6a3](https://github.com/whogivadam/worthit/commit/543e6a35a2e0248d6ca8940c42bdb84d07b64d63))
+
+
+### Documentation
+
+* **release:** translate the AMO listing into Swedish ([#48](https://github.com/whogivadam/worthit/issues/48)) ([5a54c69](https://github.com/whogivadam/worthit/commit/5a54c69f5cdb2c34c054fb8a3690a76273118826))
+
 ## [0.3.0](https://github.com/whogivadam/worthit/compare/v0.2.0...v0.3.0) (2026-10-25)
 
 
