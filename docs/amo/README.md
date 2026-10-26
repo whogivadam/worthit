@@ -104,3 +104,35 @@ once, at
 
 None of this is version-specific: it survives every later release, and a new version does not reset
 or re-require it.
+
+## Languages
+
+`amo-metadata.json` carries `summary` and `description` once per locale, and
+`web-ext sign --amo-metadata` sends the whole file on every submission, so a
+translation reaches the store with the next release and needs no visit to the
+Developer Hub.
+
+**AMO spells Swedish `sv-SE`. The extension spells it `sv`** — in `_locales/sv/`,
+in `I18n.LANGUAGES` and in the stored `language` setting. The two are not
+interchangeable: AMO will not accept `sv` as a listing locale, and the extension
+will not accept `sv-SE` as a UI language. The mismatch looks like a typo and is
+not one, so do not "correct" either side into line. `amo-metadata.json` is strict
+JSON with nowhere to write that down, which is why it is here and in
+`tests/tooling.test.js`.
+
+Only prose is translated. `name` stays `en-US` only, because *Worth It?* is the
+product name and is left untranslated in `_locales/sv/messages.json` too, and
+`homepage`, `support_url` and `support_email` are URLs and an address.
+
+Two things the tests enforce, both easy to get wrong by hand:
+
+- **AMO caps `summary` at 250 characters.** Swedish runs longer than English --
+  206 against 186 for the same sentence -- so the margin is smaller than it looks.
+- **Every UI language must have a listing locale.** Adding a third language fails
+  `npm test` until the listing is translated too, rather than quietly leaving a
+  store page in English.
+
+The privacy section is over half the description and states facts that
+`npm run check-privacy` and the manifest enforce. A translation that softened or
+dropped one of them would be an inaccurate claim on a public page, so each claim
+is pinned to a phrase that has to survive translation.
