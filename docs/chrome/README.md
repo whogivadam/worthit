@@ -15,10 +15,27 @@ Chrome takes `service_worker` and ignores `scripts` (from Chrome 121); Firefox t
 starts its event page regardless of `service_worker` (from Firefox 121). No build step, no second
 manifest, no bundler — `npm run build` produces one artifact that installs in both.
 
-`npx web-ext lint` therefore reports one permanent warning,
-`BACKGROUND_SERVICE_WORKER_IGNORED`, telling you Firefox ignores `service_worker` and to make sure
-`scripts` covers it. It does. That warning is the design working; `lint.warningsAsErrors` in
-`web-ext-config.mjs` must stay `false` because of it.
+**Each browser warns about the other's key, and both are expected.** Neither is an error and neither
+stops the extension loading:
+
+| Where | Warning | Meaning |
+| --- | --- | --- |
+| `npx web-ext lint` | `BACKGROUND_SERVICE_WORKER_IGNORED` | Firefox ignores `service_worker`; make sure `scripts` covers it. It does. |
+| `chrome://extensions` | *'background.scripts' requires manifest version of 2 or lower* | Chrome ignores `scripts` in MV3. It has done since Chrome 121; before that it refused to load the extension at all, which is why 121 is the real floor for this pattern. |
+
+Both are the price of one manifest instead of two, and both were confirmed against real browsers:
+Chrome loads the extension, starts the worker and creates the daily alarm with the warning showing.
+`lint.warningsAsErrors` in `web-ext-config.mjs` must stay `false` because of the first one.
+
+Verified in Chrome, in the service worker console:
+
+```js
+await browser.alarms.getAll()
+// [{ name: 'worthit-rates-refresh', periodInMinutes: 1440, persistAcrossSessions: true, … }]
+```
+
+That one line exercises the whole Chrome path at once: the worker started, `importScripts` loaded
+`lib/rates.js`, `browser.*` resolved without a shim, and `ensureRefreshAlarm()` ran.
 
 ## No shim, and what that costs
 
