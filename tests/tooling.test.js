@@ -262,28 +262,64 @@ test('the AMO listing is translated wherever the extension is', () => {
   });
 });
 
-test('the Swedish listing makes the same privacy claims as the English one', () => {
+test('every locale of the listing makes the same privacy claims', () => {
   // The privacy section is more than half the description and states facts that
-  // the privacy check and the manifest enforce. A translation that softened or
-  // dropped one of them would be an inaccurate claim on a public store page, so
-  // each is pinned to a phrase that has to survive translation.
-  const metadata = JSON.parse(read('amo-metadata.json'));
-  const swedish = metadata.description['sv-SE'];
+  // check-privacy and the manifest enforce. A translation that softened or
+  // dropped one of them would be an inaccurate claim on a public store page.
+  //
+  // Each claim is matched per locale, and the patterns allow synonyms on purpose:
+  // the point is to catch a claim going missing, not to freeze the wording. An
+  // earlier version of this test pinned 'exakt en typ' and failed the moment a
+  // Swedish speaker quite rightly made it 'endast en typ'.
+  const CLAIMS = [
+    {
+      claim: 'browser sync is never used',
+      'en-US': /never uses browser sync/i,
+      'sv-SE': /aldrig webbläsarsynkronisering/i,
+    },
+    {
+      claim: 'there is only one kind of network request',
+      'en-US': /(exactly|only|just) one kind of network request/i,
+      'sv-SE': /(endast|exakt|bara) en typ av nätverksanrop/i,
+    },
+    {
+      claim: 'that request carries nothing but the USD-based rate table',
+      'en-US': /USD as the base/i,
+      'sv-SE': /USD som bas/i,
+    },
+    { claim: 'no cookies', 'en-US': /no cookies/i, 'sv-SE': /inga kakor/i },
+    {
+      claim: 'no analytics or telemetry',
+      'en-US': /no analytics, telemetry/i,
+      'sv-SE': /ingen analys, telemetri/i,
+    },
+    {
+      claim: 'no third-party script, font or CDN',
+      'en-US': /third-party/i,
+      'sv-SE': /tredje part/i,
+    },
+    {
+      claim: 'the tabs permission is deliberately not requested',
+      'en-US': /"tabs" permission/i,
+      'sv-SE': /behörigheten "tabs"/i,
+    },
+    { claim: 'MIT licensed', 'en-US': /MIT/, 'sv-SE': /MIT/ },
+  ];
 
-  [
-    [/aldrig webbläsarsynkronisering/, 'storage.sync is never used'],
-    [/exakt en typ av nätverksanrop/, 'exactly one kind of request'],
-    [/USD som bas/, 'the one thing that request asks for'],
-    [/inga kakor/, 'no cookies'],
-    [/ingen analys, telemetri/, 'no analytics or telemetry'],
-    [/tredje part/, 'no third-party code'],
-    [/behörigheten "tabs"/, 'the tabs permission is not requested'],
-    [/MIT/, 'the licence'],
-  ].forEach(([pattern, claim]) => {
-    assert.match(swedish, pattern, `the Swedish description must still state: ${claim}`);
+  const metadata = JSON.parse(read('amo-metadata.json'));
+  Object.keys(metadata.description).forEach((locale) => {
+    CLAIMS.forEach((entry) => {
+      const pattern = entry[locale];
+      assert.ok(pattern, `no pattern for ${locale}: add one when adding a locale`);
+      assert.match(
+        metadata.description[locale],
+        pattern,
+        `the ${locale} description must still state: ${entry.claim}`
+      );
+    });
   });
 
-  // And the claims must be true of what actually ships.
+  // And the claims have to be true of what actually ships.
   const manifest = JSON.parse(read('manifest.json'));
   assert.ok(!manifest.permissions.includes('tabs'), 'the listing says tabs is not requested');
   assert.deepEqual(manifest.browser_specific_settings.gecko.data_collection_permissions.required, [
