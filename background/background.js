@@ -1,10 +1,23 @@
 // The only place in the extension that touches the network.
 //
+// This file is the background in both browsers, from the two keys in
+// manifest.json: Chrome runs it as a service worker, Firefox as an event page.
+// Neither is persistent, which is why every listener below is registered
+// synchronously at the top level and why nothing here touches the DOM -- the
+// context can be torn down and rebuilt between any two events.
+//
 // It keeps one USD-based rate table in storage.local; the popup and the content
 // script read that table and never fetch. Refreshes run on install, on browser
 // startup, on a 24-hour alarm and when the user presses Refresh rates -- never
 // because a price was detected or checked, so the timing of these requests says
 // nothing about what the user browses.
+
+// Chrome hands a service worker one file and expects it to pull in its own
+// dependencies; Firefox has already loaded this one from background.scripts, and
+// importScripts does not exist on an event page. Hence the guard rather than a
+// second entry file.
+if (typeof importScripts === 'function') importScripts('/lib/rates.js');
+
 (function () {
   'use strict';
 

@@ -6,7 +6,7 @@ What goes in the addons.mozilla.org listing, and how to produce it again.
 | --- | --- |
 | `../../amo-metadata.json` | listing metadata passed to `web-ext sign --amo-metadata` |
 | `../../icons/icon-48.png`, `icon-96.png` | shipped in the extension, referenced from `manifest.json` |
-| `../../icons/icon-128.png` | the listing icon; not in the zip |
+| `../../icons/icon-128.png` | the listing icon, and shipped in the zip since Chrome shows it in the browser too |
 | `harness/se-shop.html`, `harness/us-shop.html` | mock shops for the overlay screenshots |
 | `01-*.png` … `05-*.png` | the five listing screenshots, 1280 × 800 |
 
@@ -96,7 +96,7 @@ once, at
 [addons.mozilla.org/developers/addon/worth-it/edit](https://addons.mozilla.org/en-US/developers/addon/worth-it/edit):
 
 - **Listing icon** — `../../icons/icon-128.png`. Without it the listing shows Mozilla's grey
-  placeholder, even though `manifest.json` references the 48 and 96 px icons and both ship in the zip.
+  placeholder, even though `manifest.json` references all three icons and all three ship in the zip.
 - **Screenshots** — `01-*.png` … `05-*.png`, in that order; the order on the page is the order they
   are shown in.
 - **Privacy policy** — optional. The description already carries the privacy section and the manifest

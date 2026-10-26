@@ -16,8 +16,8 @@ module.exports = [
   js.configs.recommended,
   {
     // Extension sources are classic scripts: they run as content scripts, popup
-    // scripts and the background event page, and are also require()d by the Node
-    // test suite through a CommonJS export tail. No bundler, no transpiler.
+    // scripts and the background, and are also require()d by the Node test suite
+    // through a CommonJS export tail. No bundler, no transpiler.
     files: ['lib/**/*.js', 'content/**/*.js', 'popup/**/*.js', 'background/**/*.js'],
     languageOptions: {
       ecmaVersion: 2023,
@@ -38,6 +38,15 @@ module.exports = [
       'prefer-const': 'error',
       'no-console': ['error', { allow: ['warn', 'error'] }],
       'no-implicit-globals': 'off',
+    },
+  },
+  {
+    // The background is an event page in Firefox and a service worker in Chrome,
+    // from the two keys in manifest.json, so it sees the worker globals too --
+    // importScripts is how the service-worker path loads lib/rates.js.
+    files: ['background/**/*.js'],
+    languageOptions: {
+      globals: { ...globals.serviceworker },
     },
   },
   {

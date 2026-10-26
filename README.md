@@ -16,18 +16,24 @@ A price is a number until you know what it costs you. Hours are harder to ignore
 
 ## Install
 
-- **Users** — install from addons.mozilla.org:
+- **Firefox** — install from addons.mozilla.org:
   <https://addons.mozilla.org/firefox/addon/worth-it/>
 
-- **Development** — load it temporarily, no build step needed:
-  1. clone this repository
-  2. open `about:debugging#/runtime/this-firefox` in Firefox
-  3. choose **Load Temporary Add-on** and pick `manifest.json` in the repository root
+- **Chrome** — not listed yet. The extension runs in Chrome 148 and newer from the same build; see
+  [docs/chrome/README.md](docs/chrome/README.md) for the store work still outstanding. Until then,
+  load it unpacked as below.
 
-  A temporary add-on is removed when Firefox restarts, and Firefox may ask you to grant site access
-  before the price badges appear.
+- **Development** — load it from source, no build step needed:
+  - *Firefox*: open `about:debugging#/runtime/this-firefox`, choose **Load Temporary Add-on** and
+    pick `manifest.json` in the repository root. It is removed when Firefox restarts, and Firefox may
+    ask you to grant site access before the price badges appear.
+  - *Chrome*: open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked** and
+    pick the repository root. The background runs as a service worker and is reported *inactive*
+    whenever it is idle, which is normal.
 
-Requires Firefox 140 or newer.
+Requires Firefox 140 or newer, or Chrome 148 or newer. One build serves both: `manifest.json`
+declares a background event page for Firefox and a service worker for Chrome, so there is no second
+manifest and no build step. See [docs/chrome/README.md](docs/chrome/README.md).
 
 ## Using it
 

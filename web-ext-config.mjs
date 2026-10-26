@@ -1,7 +1,9 @@
 // Used by `web-ext build`, `web-ext lint` and `web-ext sign`.
 //
 // ignoreFiles must exclude everything that is not runtime code, so the zip holds
-// only: manifest.json, LICENSE, icons/, background/, popup/, content/, lib/.
+// only: manifest.json, LICENSE, icons/, background/, popup/, content/, lib/ and
+// _locales/. One zip is submitted to both stores, so nothing here may be
+// browser-specific.
 // Verified after every build by scripts/check-zip.mjs.
 export default {
   ignoreFiles: [
@@ -15,8 +17,6 @@ export default {
     'coverage',
     '.husky',
     'amo-metadata.json',
-    // The 128px icon is for the AMO listing page, not for the extension.
-    'icons/icon-128.png',
     'package.json',
     'package-lock.json',
     'web-ext-config.mjs',
@@ -32,6 +32,11 @@ export default {
     overwriteDest: true,
   },
   lint: {
+    // Must stay false. The dual background key in manifest.json raises one
+    // permanent warning, BACKGROUND_SERVICE_WORKER_IGNORED: Firefox ignores
+    // `service_worker` and tells you to make sure `scripts` covers it, which it
+    // does. That warning is the design working, not a defect, and turning this
+    // on would fail CI on every run for it. Errors still fail, as they should.
     warningsAsErrors: false,
   },
 };

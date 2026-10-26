@@ -28,6 +28,9 @@ const REQUIRED = [
   'lib/rates-snapshot.json',
   '_locales/en/messages.json',
   '_locales/sv/messages.json',
+  // Chrome shows the 128px icon in the browser as well as on the store listing,
+  // so it ships. It used to be excluded as an AMO-listing-only asset.
+  'icons/icon-128.png',
 ];
 
 /** Entry names from a zip's central directory. */
@@ -94,8 +97,7 @@ const files = entries.filter((name) => !name.endsWith('/'));
 const unexpected = entries.filter((name) => !isAllowed(name));
 const missing = REQUIRED.filter((name) => !files.includes(name));
 
-// Every shipped icon has to be one the manifest actually references. The 128px
-// icon belongs to the AMO listing page, not to the extension, and an unused
+// Every shipped icon has to be one the manifest actually references. An unused
 // asset in the zip is dead weight a reviewer has to ask about.
 const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
 const referenced = new Set([
