@@ -362,6 +362,29 @@ test('dates, phone numbers and model names are not prices', async () => {
   assert.deepEqual(page.labels(), []);
 });
 
+test('opening hours and delivery times are not prices', async () => {
+  // The bug this covers: ':dd' is the Swedish 499:99 form, 'H:MM' is the same
+  // shape, and SEK is the only currency that writes ':dd' -- so every clock on
+  // every page was badged, in SEK, whatever the reader's own currency.
+  const page = await mount(
+    [
+      '<p>Öppet 10:00-18:00</p>',
+      '<p>Lördag 09:55 - 15:00</p>',
+      '<p>Levereras kl. 12:15</p>',
+      '<p>Senast 23:59</p>',
+      '<p>Avgår 1:30</p>',
+    ].join('')
+  );
+  assert.deepEqual(page.labels(), []);
+});
+
+test('a Swedish price in ore still gets a badge beside the times', async () => {
+  // The other half: the fix must not cost the form it was protecting.
+  const page = await mount('<p>Öppet 10:00-18:00</p><p>499:99</p><p>1 299:-</p>');
+  // 30000/month over a 40-hour week is 173.08/h, so 499:99 is 2h53m.
+  assert.deepEqual(page.labels(), ['2h53m', '7h30m']);
+});
+
 test('the badge is marked so page scripts and rescans can recognise it', async () => {
   const page = await mount('<p>1 299 kr</p>');
   const badge = page.badges()[0];
