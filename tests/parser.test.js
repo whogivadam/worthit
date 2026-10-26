@@ -213,6 +213,49 @@ const CASES = [
   ['top 100', NONE, null],
   ['cars 500', NONE, null],
   ['$0', NONE, null],
+
+  // --- clock times, not prices ----------------------------------------------
+  // ':dd' is the Swedish 499:99 form and 'H:MM' is the same shape, so every
+  // opening hour on a page read as a price. An hour of 0-23 against minutes of
+  // 0-59 is a time; 499:99 survives because 99 is no minute.
+  ['09:55', NONE, null],
+  ['09:55', SE, null],
+  ['9:55', SE, null],
+  ['08:00', SE, null],
+  ['10:00', SE, null],
+  ['19:30', SE, null],
+  ['23:59', SE, null],
+  ['1:30', SE, null],
+  ['0:30', SE, null],
+  ['00:30', SE, null],
+  ['kl. 09:55', SE, null],
+  ['klockan 18:00', SE, null],
+  ['Levereras 09:55', SE, null],
+  // Decided deliberately: both a valid time and a valid 12 kronor 15 ore, and
+  // the time wins. A badge on a delivery slot is wrong on every page that shows
+  // one; a missed 12:15 costs one badge on shops still writing ore.
+  ['12:15', SE, null],
+  ['20:50', SE, null],
+  // The minutes make these impossible as a clock, so they stay prices.
+  ['23:99', SE, 23.99, 'SEK'],
+  ['99:55', SE, 99.55, 'SEK'],
+  ['24:00', SE, 24, 'SEK'],
+  // A quirk has to end where the number ends, or '09:555' reads as '09:55'.
+  ['09:555', SE, null],
+  // The period form never matched and must not start: these are times too.
+  ['09.55', NONE, null],
+  ['09.55', SE, null],
+  ['19.30', SE, null],
+  ['9.55', SE, null],
+
+  // ':dd' is written by SEK alone, which used to make it SEK on any page in the
+  // world. It now needs one rung of the ladder to corroborate it.
+  ['499:99', NONE, null],
+  ['499:99', { homeCurrency: 'USD' }, null],
+  ['499:99', { homeCurrency: 'SEK' }, 499.99, 'SEK'],
+  ['499:99', { pageLocale: 'sv-SE' }, 499.99, 'SEK'],
+  ['499:99', { forcedCurrency: 'SEK' }, 499.99, 'SEK'],
+  ['2 499:99', SE, 2499.99, 'SEK'],
 ];
 
 test('every case parses to the expected amount and currency', () => {
