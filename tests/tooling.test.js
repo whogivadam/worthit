@@ -216,6 +216,117 @@ test('the popup builds nodes instead of assigning markup', () => {
   assert.match(script, /replaceChildren\(/, 'expected DOM construction');
 });
 
+test('the AMO listing is translated wherever the extension is', () => {
+  // AMO spells Swedish 'sv-SE'; the extension spells it 'sv' in _locales/, in
+  // I18n.LANGUAGES and in the language setting. The two are not interchangeable
+  // and amo-metadata.json is strict JSON with nowhere to write that down, so it
+  // is recorded here and in docs/amo/README.md instead.
+  const AMO_LOCALE = { en: 'en-US', sv: 'sv-SE' };
+
+  // Prose the reader sees, which has to exist in every language the UI offers.
+  const TRANSLATED = ['summary', 'description'];
+  // Deliberately one locale only: 'Worth It?' is the product name, untranslated
+  // in _locales/sv/messages.json too, and the rest are URLs and an address.
+  const SINGLE = ['name', 'homepage', 'support_email', 'support_url'];
+
+  const metadata = JSON.parse(read('amo-metadata.json'));
+  const locales = Object.keys(metadata.summary).sort();
+
+  TRANSLATED.forEach((field) => {
+    assert.deepEqual(Object.keys(metadata[field]).sort(), locales, `${field} locales`);
+    locales.forEach((locale) => {
+      assert.ok(metadata[field][locale], `${field} is empty in ${locale}`);
+    });
+  });
+
+  SINGLE.forEach((field) => {
+    assert.deepEqual(Object.keys(metadata[field]), ['en-US'], `${field} should not be translated`);
+  });
+
+  // AMO rejects a summary over 250 characters, and Swedish runs longer than
+  // English, so this is worth asserting rather than eyeballing.
+  locales.forEach((locale) => {
+    assert.ok(
+      metadata.summary[locale].length <= 250,
+      `summary ${locale} is ${metadata.summary[locale].length} characters, over AMO's 250`
+    );
+  });
+
+  // The point of the test: adding a third UI language fails here until the
+  // listing is translated too, rather than shipping a store page in English.
+  const i18n = require('../lib/i18n.js');
+  i18n.LANGUAGES.forEach((language) => {
+    const locale = AMO_LOCALE[language];
+    assert.ok(locale, `no AMO locale is mapped for the UI language ${language}`);
+    assert.ok(locales.includes(locale), `the listing has no ${locale} for UI language ${language}`);
+  });
+});
+
+test('every locale of the listing makes the same privacy claims', () => {
+  // The privacy section is more than half the description and states facts that
+  // check-privacy and the manifest enforce. A translation that softened or
+  // dropped one of them would be an inaccurate claim on a public store page.
+  //
+  // Each claim is matched per locale, and the patterns allow synonyms on purpose:
+  // the point is to catch a claim going missing, not to freeze the wording. An
+  // earlier version of this test pinned 'exakt en typ' and failed the moment a
+  // Swedish speaker quite rightly made it 'endast en typ'.
+  const CLAIMS = [
+    {
+      claim: 'browser sync is never used',
+      'en-US': /never uses browser sync/i,
+      'sv-SE': /aldrig webbläsarsynkronisering/i,
+    },
+    {
+      claim: 'there is only one kind of network request',
+      'en-US': /(exactly|only|just) one kind of network request/i,
+      'sv-SE': /(endast|exakt|bara) en typ av nätverksanrop/i,
+    },
+    {
+      claim: 'that request carries nothing but the USD-based rate table',
+      'en-US': /USD as the base/i,
+      'sv-SE': /USD som bas/i,
+    },
+    { claim: 'no cookies', 'en-US': /no cookies/i, 'sv-SE': /inga kakor/i },
+    {
+      claim: 'no analytics or telemetry',
+      'en-US': /no analytics, telemetry/i,
+      'sv-SE': /ingen analys, telemetri/i,
+    },
+    {
+      claim: 'no third-party script, font or CDN',
+      'en-US': /third-party/i,
+      'sv-SE': /tredje part/i,
+    },
+    {
+      claim: 'the tabs permission is deliberately not requested',
+      'en-US': /"tabs" permission/i,
+      'sv-SE': /behörigheten "tabs"/i,
+    },
+    { claim: 'MIT licensed', 'en-US': /MIT/, 'sv-SE': /MIT/ },
+  ];
+
+  const metadata = JSON.parse(read('amo-metadata.json'));
+  Object.keys(metadata.description).forEach((locale) => {
+    CLAIMS.forEach((entry) => {
+      const pattern = entry[locale];
+      assert.ok(pattern, `no pattern for ${locale}: add one when adding a locale`);
+      assert.match(
+        metadata.description[locale],
+        pattern,
+        `the ${locale} description must still state: ${entry.claim}`
+      );
+    });
+  });
+
+  // And the claims have to be true of what actually ships.
+  const manifest = JSON.parse(read('manifest.json'));
+  assert.ok(!manifest.permissions.includes('tabs'), 'the listing says tabs is not requested');
+  assert.deepEqual(manifest.browser_specific_settings.gecko.data_collection_permissions.required, [
+    'none',
+  ]);
+});
+
 test('the popup ships the required rate attribution, in every language', () => {
   // ExchangeRate-API's free tier requires the attribution link, so it is not
   // something a translation may quietly drop. The link lives in the markup; the
