@@ -89,8 +89,10 @@ step 1.
 **Remote code:** *not using remote code*. `npm run check-privacy` enforces exactly that on every
 change — no CDN, no remote script, font or configuration, all code inside the extension.
 
-**Data usage:** nothing is collected. `manifest.json` declares
-`data_collection_permissions: { required: ["none"] }` and the extension never uses `storage.sync`.
+**Data usage:** nothing is collected. Declare that here — this section is the claim a Chrome
+reviewer can check — and back it with `PRIVACY.md`; the extension never uses `storage.sync`, so none
+of it leaves the device. The equivalent manifest key is Firefox-only, so do not cite it here (see
+below).
 Privacy policy URL: <https://github.com/whogivadam/worthit/blob/main/PRIVACY.md>
 
 **Permission justifications**, one per declared permission:
@@ -122,11 +124,11 @@ actually asking is the whole job of the field. Paste this into it:
 > explicit user gesture, whereas the badges appear as the reader browses — that automatic behaviour is
 > the extension's single purpose.
 >
-> The extension's host permissions are already minimal: three exchange-rate endpoints and nothing
-> else. The broad match applies only to the content script, which reads page text locally to find
-> prices and sends nothing anywhere. The extension deliberately does not request the `tabs`
-> permission, so it cannot see the reader's tabs or browsing history, and it collects no data at all,
-> as declared in the Data usage section above.
+> The declared `host_permissions` are already minimal: three exchange-rate endpoints and nothing
+> else. The broad access comes from the content script's `<all_urls>` match, which is what lets it
+> read page text locally to find prices; it sends nothing anywhere. The extension deliberately does
+> not request the `tabs` permission, so it cannot see the reader's tabs or browsing history, and it
+> collects no data at all, as declared in the Data usage section of this tab.
 
 Two things worth knowing when reading that back:
 
@@ -139,8 +141,9 @@ Two things worth knowing when reading that back:
   section of this same tab. The claim is identical either way, but quote the one the reader can check.
 
 The same argument, written for readers rather than reviewers, is the *WHY IT NEEDS ACCESS TO ANY SITE*
-section of `amo-metadata.json`. Mozilla reviewed and approved this permission twice — a full human
-review for v0.1.0 and then updates — which is worth remembering if a Chrome reviewer pushes back.
+section of `amo-metadata.json`. Mozilla reviewed and approved this permission at every release since
+v0.1.0, starting with a full human review — which is worth remembering if a Chrome reviewer pushes
+back.
 
 There is one genuine alternative, if review ever goes badly: `optional_host_permissions` plus
 `scripting.registerContentScripts` at runtime, so the reader grants broad access after install
