@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.0](https://github.com/whogivadam/worthit/compare/v0.3.1...v0.4.0) (2026-10-27)
+
+
+### Features
+
+* **manifest:** run in Chrome and publish to the Chrome Web Store ([#56](https://github.com/whogivadam/worthit/issues/56)) ([ad79db7](https://github.com/whogivadam/worthit/commit/ad79db79bbc5e380ddbeb9a979bb7909892b2a3c))
+
+
+### Documentation
+
+* **release:** answer the broad-host-permission warning head-on ([#57](https://github.com/whogivadam/worthit/issues/57)) ([2cb7b93](https://github.com/whogivadam/worthit/commit/2cb7b93b96209874da81868c28112003cf206c02))
+* **release:** make the store-review text say what a reviewer can check ([#58](https://github.com/whogivadam/worthit/issues/58)) ([161169e](https://github.com/whogivadam/worthit/commit/161169e33295e4ed9abc0e187d56878763537544))
+* **release:** record how AMO handles listing metadata ([#52](https://github.com/whogivadam/worthit/issues/52)) ([d750cae](https://github.com/whogivadam/worthit/commit/d750cae6bcb0b199d47a77d6c8f1679af3d2026b))
+
 ## [0.3.1](https://github.com/whogivadam/worthit/compare/v0.3.0...v0.3.1) (2026-10-26)
 
 
