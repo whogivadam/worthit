@@ -153,6 +153,87 @@ test('release-please keeps package.json and manifest.json versions together', as
   assert.equal(manifest['.'], pkg.version, 'release-please manifest is out of step with package.json');
 });
 
+test('one manifest serves both browsers, from two background keys', () => {
+  // Chrome takes service_worker and ignores scripts from Chrome 121; Firefox
+  // takes scripts and starts its event page regardless of service_worker from
+  // Firefox 121. Declaring both is what lets one zip go to both stores with no
+  // build step. Dropping either key silently breaks one browser: Chrome loses
+  // its background entirely, Firefox loses rate fetching.
+  const manifest = JSON.parse(read('manifest.json'));
+  const background = manifest.background;
+
+  assert.ok(Array.isArray(background.scripts), 'Firefox needs background.scripts');
+  assert.equal(
+    typeof background.service_worker,
+    'string',
+    'Chrome needs background.service_worker, and it takes one file, not a list'
+  );
+
+  // The service worker is the last of the scripts, and loads the rest itself.
+  assert.equal(background.service_worker, background.scripts[background.scripts.length - 1]);
+  background.scripts.forEach((file) => {
+    assert.ok(fs.existsSync(path.join(root, file)), `${file} is missing`);
+  });
+});
+
+test('the service-worker path loads its own dependencies', () => {
+  // Chrome hands the worker one file. Anything background.scripts would have
+  // loaded for Firefox has to be imported here, or Chrome throws on a
+  // globalThis.WorthIt* that was never defined.
+  const manifest = JSON.parse(read('manifest.json'));
+  const source = read(manifest.background.service_worker);
+  const others = manifest.background.scripts.filter(
+    (file) => file !== manifest.background.service_worker
+  );
+
+  assert.ok(others.length, 'expected the event page to load more than the worker file');
+  others.forEach((file) => {
+    assert.ok(
+      source.includes(`importScripts('/${file}')`),
+      `${manifest.background.service_worker} must importScripts('/${file}')`
+    );
+  });
+  assert.match(source, /typeof importScripts === 'function'/, 'guarded for the event page');
+});
+
+test('the background registers every listener at the top level', () => {
+  // The MV3 requirement neither browser forgives: a listener added inside an
+  // async callback is not registered when the context is rebuilt for an event,
+  // so the event is missed. Indentation is the signal -- these must sit in the
+  // IIFE body, two spaces in, not nested inside anything.
+  const source = read('manifest.json');
+  const background = read(JSON.parse(source).background.service_worker);
+  const listeners = background.match(/^ {0,2}browser\.[\w.]+\.addListener\(/gm) || [];
+  const nested = background.match(/^ {3,}browser\.[\w.]+\.addListener\(/gm) || [];
+
+  assert.ok(listeners.length >= 4, `expected top-level listeners, found ${listeners.length}`);
+  assert.deepEqual(nested, [], 'these listeners are nested and will miss events');
+});
+
+test('Chrome gets a minimum version it can actually run', () => {
+  // 148 is the first Chrome to expose the extension APIs under `browser`, which
+  // is the whole reason no shim or polyfill ships. Lowering this without adding
+  // one would leave `browser` undefined in Chrome and break everything.
+  const manifest = JSON.parse(read('manifest.json'));
+  assert.ok(manifest.minimum_chrome_version, 'minimum_chrome_version must be set');
+  assert.ok(
+    Number(manifest.minimum_chrome_version) >= 148,
+    'below Chrome 148 the `browser` namespace does not exist and a shim is required'
+  );
+});
+
+test('the 128px icon is declared and shipped', () => {
+  // It was excluded from the zip while it was only the AMO listing icon. Chrome
+  // shows it in the browser, so it ships now -- and check-zip rejects an icon
+  // the manifest does not reference, so the two have to agree.
+  const manifest = JSON.parse(read('manifest.json'));
+  assert.equal(manifest.icons['128'], 'icons/icon-128.png');
+  assert.ok(fs.existsSync(path.join(root, 'icons/icon-128.png')));
+
+  const checkZip = read('scripts/check-zip.mjs');
+  assert.match(checkZip, /'icons\/icon-128\.png'/, 'check-zip must require it');
+});
+
 test('the packaging ignore list excludes everything that is not runtime code', async () => {
   const config = (await import('../web-ext-config.mjs')).default;
   const ignored = config.ignoreFiles;

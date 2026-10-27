@@ -78,6 +78,24 @@ jobs:
           WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
         run: npm run sign
 
+      # The Chrome Web Store counterpart. It uploads and submits for review in
+      # one call and returns; review is asynchronous and arrives by email, so
+      # there is deliberately nothing to wait for here -- see the AMO step above.
+      #
+      # The very first submission of a new extension cannot come from here: an
+      # item has no ID until a draft has been uploaded by hand in the developer
+      # console, and cannot be published until its listing is complete. CI
+      # handles every version after that one. See docs/chrome/README.md.
+      - name: Submit to the Chrome Web Store
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
+        run: npm run publish:chrome
+
   resubmit:
     name: resubmit
     if: github.event_name == 'workflow_dispatch'
@@ -120,3 +138,12 @@ jobs:
           WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
           WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
         run: npm run sign
+
+      - name: Submit to the Chrome Web Store
+        env:
+          EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
+        run: npm run publish:chrome
