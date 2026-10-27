@@ -103,14 +103,50 @@ Privacy policy URL: <https://github.com/whogivadam/worthit/blob/main/PRIVACY.md>
 | `https://open.er-api.com/*` | The exchange-rate provider. Fetches one USD-based rate table; the request carries no cookies, no referrer and nothing about the reader. |
 | `https://api.frankfurter.app/*`, `https://api.frankfurter.dev/*` | The European Central Bank feed, used only as a fallback when the primary provider cannot be reached. |
 
-**Host permission justification** for `<all_urls>` — the field that draws the closest review:
+**Host permission justification** — the field that draws the closest review, and the one the store
+warns about on submission:
 
-> Prices appear on any shop, in any country, so the price detector has to be able to run anywhere;
-> there is no list of shopping sites that would not miss the one the reader is on. It reads page text
-> locally to find prices and sends nothing anywhere. The extension deliberately does **not** request
-> the `tabs` permission, so it cannot see the reader's tabs or browsing history.
+> Because of the following issue, your extension may require an in-depth review: Broad Host
+> Permissions
 
-The same text, longer, is the *WHY IT NEEDS ACCESS TO ANY SITE* section of `amo-metadata.json`.
+That warning suggests two alternatives, `activeTab` or a list of specific sites, and neither is
+available here. The justification has to say so, because answering the question the reviewer is
+actually asking is the whole job of the field. Paste this into it:
+
+> Prices appear on any shop, in any country, so the price detector has to be able to run anywhere —
+> there is no list of shopping sites that would not miss the one the reader is on.
+>
+> `activeTab` cannot serve this purpose, and the extension already requests it for a different one:
+> reading the active tab's hostname so the popup can offer to disable the extension on that site or
+> force a currency where its prices are ambiguous. `activeTab` grants access only in response to an
+> explicit user gesture, whereas the badges appear as the reader browses — that automatic behaviour is
+> the extension's single purpose.
+>
+> The extension's host permissions are already minimal: three exchange-rate endpoints and nothing
+> else. The broad match applies only to the content script, which reads page text locally to find
+> prices and sends nothing anywhere. The extension deliberately does not request the `tabs`
+> permission, so it cannot see the reader's tabs or browsing history, and it collects no data at all,
+> as declared in the Data usage section above.
+
+Two things worth knowing when reading that back:
+
+- **The broad access is not in `host_permissions`.** Those are already narrow — the three rate
+  endpoints. It comes from `content_scripts[0].matches`, which has to be `<all_urls>` for the content
+  script to run on a page and read the prices on it. Chrome's warning does not distinguish the two,
+  and the justification should.
+- **Do not cite `data_collection_permissions` to a Chrome reviewer.** It is a Firefox-only key, inside
+  `browser_specific_settings.gecko`, and means nothing to Chrome; its equivalent is the Data usage
+  section of this same tab. The claim is identical either way, but quote the one the reader can check.
+
+The same argument, written for readers rather than reviewers, is the *WHY IT NEEDS ACCESS TO ANY SITE*
+section of `amo-metadata.json`. Mozilla reviewed and approved this permission twice — a full human
+review for v0.1.0 and then updates — which is worth remembering if a Chrome reviewer pushes back.
+
+There is one genuine alternative, if review ever goes badly: `optional_host_permissions` plus
+`scripting.registerContentScripts` at runtime, so the reader grants broad access after install
+instead of at it. It would likely shorten review. It also needs the `scripting` permission, a grant
+flow and a changed first run, and it makes the extension do nothing until the reader opts in — which
+is a different product. Not worth doing pre-emptively.
 
 **Assets**, both of which already exist and need no work: the five screenshots in `docs/amo/` are
 1280 × 800, a size Chrome accepts, and `icons/icon-128.png` is the store icon. Unlike AMO, these go
