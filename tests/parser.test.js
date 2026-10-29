@@ -134,6 +134,14 @@ const CASES = [
   ['400,-', { tld: 'x.dk' }, 400, 'DKK'],
   ['1.234,-', { tld: 'x.de' }, 1234, 'EUR'],
   ['1.234,-', { pageLocale: 'nl-NL' }, 1234, 'EUR'],
+  // '.-' is Elgiganten's form, and SEK alone writes it. The dot is both a group
+  // separator and part of the suffix, so '2.190.-' has to read as one price.
+  ['2 190.-', SE, 2190, 'SEK'],
+  [`2${NBSP}190.-`, SE, 2190, 'SEK'],
+  ['1299.-', SE, 1299, 'SEK'],
+  ['2.190.-', SE, 2190, 'SEK'],
+  // A decimal price with a plain 'kr' must be untouched by the new suffix.
+  ['1.50 kr', SE, 1.5, 'SEK'],
 
   // --- zero-decimal currencies ----------------------------------------------
   ['¥1.234', NONE, 1234, 'JPY'],
@@ -242,6 +250,12 @@ const CASES = [
   ['24:00', SE, 24, 'SEK'],
   // A quirk has to end where the number ends, or '09:555' reads as '09:55'.
   ['09:555', SE, null],
+  // Dates carry a dash after digits, which is the shape of the '.-' suffix
+  // without the dot. They must stay out, in either order and either separator.
+  ['2026-10-28', SE, null],
+  ['28-10-2026', SE, null],
+  ['2026-10-28', NONE, null],
+
   // The period form never matched and must not start: these are times too.
   ['09.55', NONE, null],
   ['09.55', SE, null],
