@@ -86,8 +86,19 @@ jobs:
       # item has no ID until a draft has been uploaded by hand in the developer
       # console, and cannot be published until its listing is complete. CI
       # handles every version after that one. See docs/chrome/README.md.
+      #
+      # continue-on-error, because the refresh token expires every 7 days: the
+      # OAuth consent screen stays in Testing, which is what Google issues
+      # short-lived tokens for, and leaving Testing needs a homepage and privacy
+      # policy on a domain we own and have verified. Zip uploads by hand are the
+      # accepted cost instead. This step runs last, after the tag, the GitHub
+      # release and the AMO submission, so failing it would report a release
+      # that worked as a release that did not. The summary says what is left to
+      # do by hand.
       - name: Submit to the Chrome Web Store
+        id: chrome
         if: ${{ steps.release.outputs.release_created }}
+        continue-on-error: true
         env:
           EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
           CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
@@ -95,6 +106,25 @@ jobs:
           REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
           PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
         run: npm run publish:chrome
+
+      - name: Say that Chrome needs a zip uploaded by hand
+        if: ${{ steps.release.outputs.release_created && steps.chrome.outcome == 'failure' }}
+        env:
+          TAG: ${{ steps.release.outputs.tag_name }}
+        run: |
+          {
+            echo "### Chrome Web Store: upload the zip by hand"
+            echo
+            echo "\`npm run publish:chrome\` failed. Two causes are likely: the"
+            echo "store refuses to publish over an item that is still in review, and"
+            echo "the refresh token lasts only 7 days while the OAuth consent screen"
+            echo "is in Testing. The log says which. See docs/chrome/README.md."
+            echo
+            echo "Everything else in this release succeeded: the tag, the GitHub"
+            echo "release and the AMO submission. To finish Chrome, download the zip"
+            echo "attached to the \`$TAG\` release and upload it at"
+            echo "<https://chrome.google.com/webstore/devconsole/>."
+          } >> "$GITHUB_STEP_SUMMARY"
 
   resubmit:
     name: resubmit
@@ -139,7 +169,10 @@ jobs:
           WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
         run: npm run sign
 
+      # Non-blocking for the same reason as the release job above.
       - name: Submit to the Chrome Web Store
+        id: chrome
+        continue-on-error: true
         env:
           EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
           CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
@@ -147,3 +180,19 @@ jobs:
           REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
           PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
         run: npm run publish:chrome
+
+      - name: Say that Chrome needs a zip uploaded by hand
+        if: ${{ steps.chrome.outcome == 'failure' }}
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          {
+            echo "### Chrome Web Store: upload the zip by hand"
+            echo
+            echo "\`npm run publish:chrome\` failed for \`$TAG\`. Either the item is"
+            echo "still in review, or the refresh token expired. See"
+            echo "docs/chrome/README.md."
+            echo
+            echo "Build the zip with \`npm run build\` and upload it at"
+            echo "<https://chrome.google.com/webstore/devconsole/>."
+          } >> "$GITHUB_STEP_SUMMARY"

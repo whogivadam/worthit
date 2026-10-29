@@ -173,6 +173,42 @@ Repository secrets:
 The `resubmit` workflow path submits an existing tag to both stores, for a release whose submission
 failed after the GitHub release already existed.
 
+### A version in review blocks the next one
+
+```
+❌ You may not edit or publish an item that is in review.
+```
+
+The store will not publish over a version that is still under review, and for this extension review
+is the in-depth kind, because of the `<all_urls>` content script. v0.4.0 hit exactly this: the
+release was tagged, the zip attached and AMO submitted, and only the Chrome step failed, with 0.3.1
+still in review days after the listing went visible. A listing can be publicly visible while its
+version is still being reviewed — the two states are independent.
+
+**The API will not warn you in advance.** `items.get?projection=DRAFT` reports `uploadState`, which
+describes a pending *draft* upload and nothing about the published version: it returns `NOT_FOUND`
+when no draft exists, whether or not a review is open. The only reliable signal is the publish
+attempt itself, so a failed Chrome step on a release is expected whenever the previous version has
+not cleared.
+
+### The refresh token expires every 7 days
+
+Google issues short-lived refresh tokens to OAuth clients whose consent screen is still in
+**Testing**, and leaving Testing requires a homepage and a privacy policy hosted on a domain we own
+and have verified in Search Console. `github.com` cannot be that domain: authorized domains are
+verified at the top private domain, and Google'''s own guidance warns against hosting either page
+somewhere you cannot prove you own the subdomain — which rules out GitHub Pages too.
+
+Buying a domain would fix it, and would also give both store listings a privacy policy that is not a
+`PRIVACY.md` blob link. Until that is worth doing, **uploading the zip by hand is the accepted
+fallback**, so both Chrome steps are `continue-on-error`. They run last, after the tag, the GitHub
+release and the AMO submission, so a dead token leaves a published release and one step to finish by
+hand rather than a red release that actually worked. The job summary says so, and names the tag whose
+zip to upload.
+
+A token reissued while the consent screen is still in Testing gets the same 7-day limit, so
+regenerating it is only worth doing right before a release.
+
 ## Checking a build in Chrome
 
 ```sh
