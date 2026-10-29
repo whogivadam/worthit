@@ -214,6 +214,24 @@ const CASES = [
   ['cars 500', NONE, null],
   ['$0', NONE, null],
 
+  // --- a token glued inside a run of digits ----------------------------------
+  // 'rm' is the ringgit symbol, and here it has digits on both sides. Letters
+  // were already excluded either side of a token; digits are only safe on the
+  // side the number is on, which is what 'SEK400' and '400kr' rely on.
+  ['1902rm2193u121123fsdf', SE, null],
+  ['1902rm2193', SE, null],
+  ['12kr34', SE, null],
+  ['100kr200', SE, null],
+  ['123usd456', NONE, null],
+  // These were already rejected, by the letter guard, and stay rejected.
+  ['abc100krdef', SE, null],
+  ['x100usdy', SE, null],
+  // The digit guard must not reach past a separator: a number in the next
+  // sentence is not glued to this price.
+  ['400kr', SE, 400, 'SEK'],
+  ['100$', NONE, 100, 'USD'],
+  ['400 kr 2', SE, 400, 'SEK'],
+
   // --- clock times, not prices ----------------------------------------------
   // ':dd' is the Swedish 499:99 form and 'H:MM' is the same shape, so every
   // opening hour on a page read as a price. An hour of 0-23 against minutes of
@@ -310,6 +328,17 @@ test('several prices in one string are all found, in order', () => {
   assert.deepEqual(
     parser.parsePrices('¥1000 and 1000元', NONE).map((price) => price.currency),
     ['JPY', 'CNY'],
+  );
+  // Two separated prices stay two prices: the digit guard looks one character
+  // past the token, not across the space.
+  assert.deepEqual(
+    parser.parsePrices('100 kr 200 kr', SE).map((price) => price.amount),
+    [100, 200],
+  );
+  // A range still reads as its two ends.
+  assert.deepEqual(
+    parser.parsePrices('100-200 kr', SE).map((price) => price.amount),
+    [100, 200],
   );
 });
 
