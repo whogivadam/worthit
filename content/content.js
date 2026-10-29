@@ -184,6 +184,47 @@
   }
 
   /**
+   * Text carried for assistive technology and hidden from the screen. Elgiganten
+   * ships both forms -- "2 190.-" visibly and "Pris 2 190 kr" for readers -- so
+   * without this the only badge on the page lands where nobody can see it, and
+   * once the visible form parses too there are two badges for one price.
+   *
+   * Computed styles only: 'sr-only' and 'visually-hidden' are conventions, not
+   * guarantees, and the class name says nothing about what the page actually did.
+   *
+   * display:none and visibility:hidden are deliberately not treated as hidden. A
+   * collapsed tab, accordion or menu can become visible again with no DOM
+   * mutation, so the observer would never come back and those prices would be
+   * lost for good. That is also why the 1px-box test needs a layout box to go
+   * with it: an unrendered element measures zero in both directions as well, and
+   * must not be mistaken for a clipped one.
+   */
+  function isScreenReaderOnly(element) {
+    let current = element;
+    for (let depth = 0; current && depth <= 4; depth += 1) {
+      if (current === document.body) return false;
+
+      const style = window.getComputedStyle(current);
+      if (style) {
+        if (style.clip && style.clip !== 'auto') return true;
+        if (style.clipPath && style.clipPath.indexOf('inset(50%') === 0) return true;
+        if (
+          style.overflow === 'hidden' &&
+          current.offsetWidth <= 1 &&
+          current.offsetHeight <= 1 &&
+          current.getClientRects().length > 0
+        ) {
+          return true;
+        }
+      }
+
+      current = current.parentElement;
+    }
+
+    return false;
+  }
+
+  /**
    * Badges every price in one text node, working backwards so that splitting
    * the node does not move the offsets of the prices still to be handled.
    */
@@ -196,6 +237,13 @@
 
     const prices = Parser.parsePrices(text, state.context);
     if (!prices.length) return trySplitPrice(node);
+
+    // Marked as handled either way: a rescan would reach the same verdict, and
+    // leaving it unmarked makes every later pass walk it again.
+    if (isScreenReaderOnly(node.parentElement)) {
+      processedText.add(node);
+      return false;
+    }
 
     processedText.add(node);
     let inserted = false;
@@ -243,6 +291,10 @@
       if (combined && combined.length <= 200) {
         const prices = Parser.parsePrices(combined, state.context);
         if (prices.length === 1) {
+          if (isScreenReaderOnly(container)) {
+            processedText.add(node);
+            return false;
+          }
           const badge = priceBadge(prices[0]);
           if (!badge) return false;
           container.setAttribute(DONE_ATTR, '');

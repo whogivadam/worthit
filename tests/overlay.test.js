@@ -194,6 +194,66 @@ test('editable and code content is left alone', async () => {
   assert.deepEqual(page.labels(), []);
 });
 
+// Elgiganten carries the price twice: "2 190.-" on screen and "Pris 2 190 kr"
+// for screen readers. Badging the second one puts the badge where nobody can
+// see it, and badging both puts two badges on one price.
+const SR_ONLY_HEAD =
+  '<style>.sr{position:absolute;clip:rect(0 0 0 0);clip-path:inset(50%);' +
+  'overflow:hidden;width:1px;height:1px;white-space:nowrap}</style>';
+
+test('screen-reader-only text gets no badge', async () => {
+  const page = await mount('<p><span class="sr">Pris 2 190 kr</span></p>', null, {
+    head: SR_ONLY_HEAD,
+  });
+  assert.deepEqual(page.labels(), []);
+});
+
+test('the visible price beside it gets exactly one badge', async () => {
+  const page = await mount(
+    '<p><span class="sr">Pris 2 190 kr</span><span class="visible">2 190.-</span></p>',
+    null,
+    { head: SR_ONLY_HEAD },
+  );
+  // 2190 SEK is 12 h 39 min, past one workday, so the badge compacts to days.
+  assert.deepEqual(page.labels(), ['1.6d']);
+  assert.equal(page.badges()[0].parentElement.className, 'visible');
+});
+
+test('a clip-path of inset(50%) is enough on its own', async () => {
+  const page = await mount('<p><span class="hid">1 299 kr</span></p>', null, {
+    head: '<style>.hid{clip-path:inset(50%)}</style>',
+  });
+  assert.deepEqual(page.labels(), []);
+});
+
+// Collapsed tabs, accordions and menus become visible again with no DOM
+// mutation, so the observer would never come back for them. Skipping them would
+// lose those badges for good, which is worse than badging something unseen.
+test('display:none and visibility:hidden content is still badged', async () => {
+  const page = await mount(
+    '<p class="gone">1 299 kr</p><p class="invisible">1 299 kr</p>',
+    null,
+    { head: '<style>.gone{display:none}.invisible{visibility:hidden}</style>' },
+  );
+  assert.deepEqual(page.labels(), ['7h30m', '7h30m']);
+});
+
+// A price split across elements reads off the container, so the container is
+// what has to be tested -- the number's own parent carries no style of interest.
+test('a split price inside screen-reader-only text gets no badge', async () => {
+  const page = await mount(
+    '<div class="sr"><span>1 299</span><span>kr</span></div>',
+    null,
+    { head: SR_ONLY_HEAD },
+  );
+  assert.deepEqual(page.labels(), []);
+});
+
+test('a split price in visible markup still gets its badge', async () => {
+  const page = await mount('<div><span>1 299</span><span>kr</span></div>');
+  assert.deepEqual(page.labels(), ['7h30m']);
+});
+
 test('amounts outside 1 to 10,000,000 home currency are ignored', async () => {
   const page = await mount('<p>0,50 kr</p><p>50 000 000 kr</p><p>1 299 kr</p>');
   assert.deepEqual(page.labels(), ['7h30m']);
