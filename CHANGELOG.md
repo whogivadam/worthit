@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.1](https://github.com/whogivadam/worthit/compare/v0.4.0...v0.4.1) (2026-10-29)
+
+
+### Bug Fixes
+
+* **overlay:** skip screen-reader-only text when badging ([#65](https://github.com/whogivadam/worthit/issues/65)) ([6ee226c](https://github.com/whogivadam/worthit/commit/6ee226c2c9d64ce39294bce22ec273f2c01dfa9b))
+* **parser:** accept the Swedish '.-' price suffix ([#64](https://github.com/whogivadam/worthit/issues/64)) ([a8e9604](https://github.com/whogivadam/worthit/commit/a8e960436573df9b6e218ed89de050e90cc13ccd))
+* **parser:** stop reading a currency token glued inside a number run ([#67](https://github.com/whogivadam/worthit/issues/67)) ([cd1f8cd](https://github.com/whogivadam/worthit/commit/cd1f8cdd7c15d003f41da94ef05f78628f1e18e0))
+
+
+### Documentation
+
+* **repo:** keep the privacy policy browser-neutral ([#60](https://github.com/whogivadam/worthit/issues/60)) ([588a9b8](https://github.com/whogivadam/worthit/commit/588a9b8e1e5e2a3f793467f41c745d02a2f275bb))
+
 ## [0.4.0](https://github.com/whogivadam/worthit/compare/v0.3.1...v0.4.0) (2026-10-27)
 
 
