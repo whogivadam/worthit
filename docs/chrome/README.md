@@ -93,7 +93,11 @@ change — no CDN, no remote script, font or configuration, all code inside the 
 reviewer can check — and back it with `PRIVACY.md`; the extension never uses `storage.sync`, so none
 of it leaves the device. The equivalent manifest key is Firefox-only, so do not cite it here (see
 below).
-Privacy policy URL: <https://github.com/whogivadam/worthit/blob/main/PRIVACY.md>
+Privacy policy URL: <https://github.com/whogivadam/worthit/blob/main/PRIVACY.md> — the same URL AMO
+is given, so `PRIVACY.md` has to stay browser-neutral. It said "uploaded to a Mozilla account" until
+v0.4.0, which is accurate on AMO and wrong here: in Chrome `storage.sync` would reach a Google
+account. It now says "your browser account", which is true in both. Being a GitHub link, editing it
+updates what both listings serve at once, with no resubmission and no new review.
 
 **Permission justifications**, one per declared permission:
 
@@ -144,6 +148,12 @@ The same argument, written for readers rather than reviewers, is the *WHY IT NEE
 section of `amo-metadata.json`. Mozilla reviewed and approved this permission at every release since
 v0.1.0, starting with a full human review — which is worth remembering if a Chrome reviewer pushes
 back.
+
+**Do not paste that file's description into Chrome verbatim.** Its *PRIVACY: NOTHING IS COLLECTED*
+paragraph says browser sync would upload to "a Mozilla account", in both locales. That is right for
+AMO and wrong for Chrome, and it reached the Chrome listing once before it was caught. Drop the
+vendor from the sentence, or name Google, and leave `amo-metadata.json` itself alone — it is AMO
+listing copy, where naming Mozilla is correct.
 
 There is one genuine alternative, if review ever goes badly: `optional_host_permissions` plus
 `scripting.registerContentScripts` at runtime, so the reader grants broad access after install

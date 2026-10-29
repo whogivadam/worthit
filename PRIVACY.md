@@ -13,8 +13,9 @@ Everything the extension knows lives in `browser.storage.local`, on your compute
 - your last 20 manual checks, so the popup can show a history and a running total
 
 `browser.storage.sync` is never used and the `sync` permission is never requested, so none of this
-is uploaded to a Mozilla account or synced between your devices. The history is capped at 20 entries
-and you can clear it from the popup at any time. Uninstalling the extension removes all of it.
+is uploaded to your browser account or synced between your devices. The history is capped at 20
+entries and you can clear it from the popup at any time. Uninstalling the extension removes all of
+it.
 
 ## The only network request
 
