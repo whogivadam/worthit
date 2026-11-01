@@ -51,10 +51,33 @@ test('package.json exposes every script the workflows and docs call', () => {
     'snapshot',
     'check-zip',
     'check-privacy',
+    'publish:chrome',
+    'chrome:zip',
     'prepare',
   ]) {
     assert.equal(typeof pkg.scripts[script], 'string', `missing npm script: ${script}`);
   }
+});
+
+test('the hand-upload zip is fetched from a release, never built locally', () => {
+  // The trap this closes: while a release PR is held, main runs ahead of the tag
+  // but manifest.json still carries the released version, so `npm run build`
+  // produces a zip named for the old version carrying the next one's code. The
+  // zip to upload is the one CI attached to the tag.
+  const script = fs.readFileSync(path.join(root, 'scripts/chrome-zip.mjs'), 'utf8');
+  // Comments explain the trap at length; the code is what must not spring it.
+  const code = script.replace(/^\s*\/\/.*$/gm, '');
+  assert.match(code, /release', 'download'/, 'it must download the release artifact');
+  // `web-ext-artifacts` is where the download lands, so the test names the
+  // three ways a zip could be built instead of the directory it would land in.
+  assert.ok(
+    !/web-ext build|run build|\bnpx\b/.test(code),
+    'it must not build a zip of its own',
+  );
+
+  // And the docs point at the command rather than describing the steps.
+  const docs = fs.readFileSync(path.join(root, 'docs/chrome/README.md'), 'utf8');
+  assert.match(docs, /npm run chrome:zip/);
 });
 
 test('the test script names files rather than a directory', () => {

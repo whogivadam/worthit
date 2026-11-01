@@ -121,9 +121,14 @@ jobs:
             echo "is in Testing. The log says which. See docs/chrome/README.md."
             echo
             echo "Everything else in this release succeeded: the tag, the GitHub"
-            echo "release and the AMO submission. To finish Chrome, download the zip"
-            echo "attached to the \`$TAG\` release and upload it at"
-            echo "<https://chrome.google.com/webstore/devconsole/>."
+            echo "release and the AMO submission. To finish Chrome, run"
+            echo
+            echo "    npm run chrome:zip $TAG"
+            echo
+            echo "which downloads this release's zip -- the bytes CI built and sent"
+            echo "to AMO -- checks it, and prints the path to upload at"
+            echo "<https://chrome.google.com/webstore/devconsole/>. Do not build the"
+            echo "zip from the working tree; it is a different artifact."
           } >> "$GITHUB_STEP_SUMMARY"
 
   resubmit:

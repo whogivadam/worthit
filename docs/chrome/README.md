@@ -69,7 +69,8 @@ CI cannot make it. A new extension has no item ID until a draft has been uploade
 developer console, and cannot be published until its listing is complete. So:
 
 1. **Add new item** and upload `web-ext-artifacts/*.zip` from `npm run build`. This creates the item
-   and gives you its 32-character ID.
+   and gives you its 32-character ID. This is the one upload that is built locally, because there is
+   no release to take it from yet; every later one comes from `npm run chrome:zip`.
 2. Fill **Store listing**, **Privacy practices** and **Distribution** — the fields below.
 3. Submit for review.
 4. Put the item ID and the OAuth credentials into the repository secrets, and every release after
@@ -218,6 +219,30 @@ zip to upload.
 
 A token reissued while the consent screen is still in Testing gets the same 7-day limit, so
 regenerating it is only worth doing right before a release.
+
+### Uploading the zip by hand
+
+```sh
+npm run chrome:zip          # the latest release
+npm run chrome:zip v0.4.0   # a named tag
+```
+
+That downloads the zip attached to the tag's GitHub release into `web-ext-artifacts/`, checks that
+the version inside it matches the tag, runs `check-zip` over it and prints the path to upload at
+<https://chrome.google.com/webstore/devconsole/>. It needs the GitHub CLI, logged in.
+
+**Never build the hand-upload zip from the working tree.** The one to upload is the artifact CI
+built from the tag and sent to AMO; a local `npm run build` is a different one. While a release pull
+request is held, `main` runs ahead of the tag and `manifest.json` still carries the *released*
+version, so the build produces a zip named for the old version carrying the next one's code — which
+would ship Chrome the fixes Firefox gets as the following version, under the same number.
+
+Both halves of a release are then on the same bytes, which also means `shasum -a 256` of the local
+file matches the asset on the release page if you ever need to prove it.
+
+Whether the hand upload is needed at all is decided by the Chrome step of the release run, not in
+advance: v0.4.1 published straight from CI with a three-day-old token and no version in review,
+while v0.4.0 needed the upload. Read the step's log before reaching for this.
 
 ## Checking a build in Chrome
 

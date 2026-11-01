@@ -90,7 +90,10 @@ function isAllowed(name) {
   return ALLOWED_DIRECTORIES.some((dir) => name.startsWith(dir));
 }
 
-const zip = newestZip();
+// A path may be given -- scripts/chrome-zip.mjs passes the file it just
+// downloaded, so the check lands on that zip rather than on whichever happens
+// to be newest.
+const zip = process.argv[2] || newestZip();
 const entries = readZipEntries(zip);
 const files = entries.filter((name) => !name.endsWith('/'));
 
