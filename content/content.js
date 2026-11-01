@@ -69,6 +69,121 @@
   // them lives here; split-price parents are marked with data-worthit instead.
   let processedText = new WeakSet();
 
+  // A shadow root sees none of the document's stylesheets, so a badge inside
+  // one would be styled by whatever the component itself says about a <span> --
+  // on komplett.se, the 46px of the price it sits beside. The sheet is put into
+  // each root that gets a badge, and this is a copy of content/badge.css
+  // because there is no way to read that file back out: the content script
+  // fetches nothing, by design, and making it web-accessible would let any page
+  // test for the extension. tests/overlay.test.js fails if the two drift apart.
+  const BADGE_CSS = `/* The badge has to survive any page's CSS and must not disturb the layout it
+   lands in. \`all: initial\` drops everything inherited or matched from the page,
+   and every declaration after it is !important because a page rule can always
+   outrank a plain one on specificity.
+
+   Nothing here affects flow: inline-block with line-height 1 and no margin, so
+   the badge sits in the text like a word. */
+
+span[data-worthit-badge] {
+  all: initial !important;
+  display: inline-block !important;
+  box-sizing: content-box !important;
+  margin: 0 0 0 4px !important;
+  padding: 2px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #ff2d2d !important;
+  background-image: none !important;
+  color: #fff !important;
+  font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace !important;
+  font-size: 11px !important;
+  font-style: normal !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+  text-align: left !important;
+  text-decoration: none !important;
+  text-indent: 0 !important;
+  text-transform: none !important;
+  white-space: nowrap !important;
+  vertical-align: baseline !important;
+  direction: ltr !important;
+  float: none !important;
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+  cursor: help !important;
+  user-select: none !important;
+  pointer-events: auto !important;
+}`;
+
+  const styledRoots = new WeakSet();
+
+  /**
+   * Puts the badge sheet into the shadow root this node lives in, once.
+   * Constructed sheets are preferred: they are CSSOM rather than markup, so a
+   * page's style-src CSP has nothing to say about them.
+   */
+  function ensureBadgeStyle(node) {
+    const root = node.getRootNode ? node.getRootNode() : null;
+    // The document already has content/badge.css from the manifest.
+    if (!root || !root.host || styledRoots.has(root)) return;
+    styledRoots.add(root);
+
+    try {
+      if (typeof CSSStyleSheet === 'function' && 'adoptedStyleSheets' in root) {
+        const sheet = new CSSStyleSheet();
+        sheet.replaceSync(BADGE_CSS);
+        root.adoptedStyleSheets = root.adoptedStyleSheets.concat([sheet]);
+        return;
+      }
+    } catch {
+      // Fall through to the element below.
+    }
+
+    const style = document.createElement('style');
+    style.textContent = BADGE_CSS;
+    root.insertBefore(style, root.firstChild);
+  }
+
+  /**
+   * Every open shadow root inside a node, depth first. Shops increasingly build
+   * product cards as custom elements, and neither a TreeWalker nor a
+   * MutationObserver crosses a shadow boundary: komplett.se nests four of them
+   * -- komplett-search-results > komplett-product-card-container >
+   * komplett-product-card > komplett-product-card-price -- which left the whole
+   * page reading as though it had no prices on it at all.
+   *
+   * A closed root keeps its tree to itself and there is nothing to be done
+   * about that from out here.
+   */
+  function shadowRootsIn(start) {
+    const roots = [];
+    if (start.shadowRoot) roots.push(start.shadowRoot);
+
+    const walker = document.createTreeWalker(start, NodeFilter.SHOW_ELEMENT);
+    let element = walker.nextNode();
+    while (element) {
+      if (element.shadowRoot) roots.push(element.shadowRoot);
+      element = walker.nextNode();
+    }
+
+    return roots.reduce(function (all, root) {
+      return all.concat([root], shadowRootsIn(root));
+    }, []);
+  }
+
   const state = {
     settings: null,
     site: null,
@@ -256,6 +371,7 @@
       const end = price.index + price.length;
       const parent = node.parentNode;
       if (!parent) break;
+      ensureBadgeStyle(node);
 
       if (end < node.nodeValue.length) {
         const tail = node.splitText(end);
@@ -297,6 +413,7 @@
           }
           const badge = priceBadge(prices[0]);
           if (!badge) return false;
+          ensureBadgeStyle(container);
           container.setAttribute(DONE_ATTR, '');
           container.appendChild(badge);
           processedText.add(node);
@@ -311,11 +428,24 @@
 
   function scan(root) {
     if (!state.enabled || !state.settings) return;
-    const start = root && root.nodeType === Node.ELEMENT_NODE ? root : document.body;
+    const isRoot =
+      root &&
+      (root.nodeType === Node.ELEMENT_NODE || root.nodeType === Node.DOCUMENT_FRAGMENT_NODE);
+    const start = isRoot ? root : document.body;
     if (!start) return;
 
     if (start.closest && start.closest(SKIP_SELECTOR)) return;
 
+    scanRoot(start);
+    // Each open shadow root is its own tree and has to be walked, and watched,
+    // in its own right.
+    shadowRootsIn(start).forEach(function (shadowRoot) {
+      observeRoot(shadowRoot);
+      scanRoot(shadowRoot);
+    });
+  }
+
+  function scanRoot(start) {
     const walker = document.createTreeWalker(start, NodeFilter.SHOW_TEXT, {
       acceptNode(node) {
         if (processedText.has(node)) return NodeFilter.FILTER_REJECT;
@@ -339,12 +469,19 @@
 
   function removeAllBadges() {
     const touched = new Set();
-    document.querySelectorAll('[' + BADGE_ATTR + ']').forEach((badge) => {
-      if (badge.parentNode) touched.add(badge.parentNode);
-      badge.remove();
-    });
-    document.querySelectorAll('[' + DONE_ATTR + ']').forEach((element) => {
-      element.removeAttribute(DONE_ATTR);
+    // Badges in a shadow root are invisible to document.querySelectorAll, so
+    // every root is asked separately or a re-price leaves the old ones behind.
+    const roots = [document].concat(
+      document.documentElement ? shadowRootsIn(document.documentElement) : []
+    );
+    roots.forEach((root) => {
+      root.querySelectorAll('[' + BADGE_ATTR + ']').forEach((badge) => {
+        if (badge.parentNode) touched.add(badge.parentNode);
+        badge.remove();
+      });
+      root.querySelectorAll('[' + DONE_ATTR + ']').forEach((element) => {
+        element.removeAttribute(DONE_ATTR);
+      });
     });
     // Decorating split text nodes; re-join them so a rescan sees whole prices.
     touched.forEach((parent) => parent.normalize());
@@ -378,8 +515,18 @@
     scanTimer = window.setTimeout(runPendingScan, wait);
   }
 
+  let observer = null;
+  const observedRoots = new WeakSet();
+
+  /** The one observer watches every root it is given, document or shadow. */
+  function observeRoot(root) {
+    if (!observer || !root || observedRoots.has(root)) return;
+    observedRoots.add(root);
+    observer.observe(root, { childList: true, subtree: true });
+  }
+
   function observe() {
-    const observer = new MutationObserver((records) => {
+    observer = new MutationObserver((records) => {
       if (!state.enabled) return;
       const roots = [];
       records.forEach((record) => {
@@ -395,7 +542,7 @@
       if (roots.length) requestScan(roots);
     });
 
-    observer.observe(document.documentElement, { childList: true, subtree: true });
+    observeRoot(document.documentElement);
   }
 
   // --- state -----------------------------------------------------------------
