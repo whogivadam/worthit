@@ -240,6 +240,24 @@ const CASES = [
   ['100$', NONE, 100, 'USD'],
   ['400 kr 2', SE, 400, 'SEK'],
 
+  // --- a token hyphenated into a model number --------------------------------
+  // 'SA-RS5' is a Sony speaker, not five rupees, and 'WF-RM1000' is a pair of
+  // earbuds rather than 1000 ringgit. The letter guard looks one character out
+  // and finds the hyphen, so the model number read as a price -- and, with no
+  // currency resolving out of 'Rs', as a bare '?' in the middle of a product
+  // name.
+  ['Sony SA-RS5 tr\u00e5dl\u00f6sa bakre h\u00f6gtalare', SE, null],
+  ['SA-RS5', SE, null],
+  ['SA-RS5', NONE, null],
+  ['WF-RM1000', SE, null],
+  ['SA/RS5', SE, null],
+  ['SA_RS5', SE, null],
+  // Only a token that opens the match is part of a model number. A match that
+  // opens with its own number is a price with a hyphenated word in front of it.
+  ['Rabatt-100 kr', SE, 100, 'SEK'],
+  ['Black Friday-199 kr', SE, 199, 'SEK'],
+  ['SEK400', SE, 400, 'SEK'],
+
   // --- clock times, not prices ----------------------------------------------
   // ':dd' is the Swedish 499:99 form and 'H:MM' is the same shape, so every
   // opening hour on a page read as a price. An hour of 0-23 against minutes of
@@ -399,6 +417,16 @@ test('an unknown token resolves to nothing rather than a guess', () => {
   const resolved = parser.resolveCurrency('QQQ', { homeCurrency: 'USD' });
   assert.equal(resolved.currency, null);
   assert.equal(resolved.ambiguous, true);
+});
+
+test('a model number beside a real price costs only the model number', () => {
+  // The reported page: the product name and the price sit in the same string.
+  assert.deepEqual(
+    parser
+      .parsePrices('Sony SA-RS5 tr\u00e5dl\u00f6sa bakre h\u00f6gtalare 3 990.-', SE)
+      .map((price) => [price.amount, price.currency]),
+    [[3990, 'SEK']],
+  );
 });
 
 test('a single-letter token needs the page or the user to back it up', () => {
