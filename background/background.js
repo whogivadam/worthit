@@ -27,7 +27,14 @@ if (typeof importScripts === 'function') importScripts('/lib/rates.js');
   const RETRY_ALARM = 'worthit-rates-retry';
   const REFRESH_MESSAGE = 'worthit:refresh-rates';
 
-  let retryAttempt = 0;
+  // How many refreshes have failed in a row, beside the rate cache in
+  // storage.local. It cannot be a variable here: this context is torn down
+  // whenever it goes idle -- Chrome kills the worker after about 30 seconds --
+  // and the retry alarm fires into a fresh one, where a counter would be back
+  // at 0 and the backoff would ask for one minute forever. storage.session is
+  // the wrong home for the same reason in the large: a retry alarm can outlive
+  // the browser session that scheduled it.
+  const RETRY_KEY = 'ratesRetryAttempt';
 
   /**
    * The request carries nothing but the URL: no cookies, no referrer and no
@@ -54,15 +61,28 @@ if (typeof importScripts === 'function') importScripts('/lib/rates.js');
     return browser.storage.local.set(update);
   }
 
-  function clearRetry() {
-    retryAttempt = 0;
+  async function readRetryAttempt() {
+    const stored = await browser.storage.local.get(RETRY_KEY);
+    const attempt = stored ? stored[RETRY_KEY] : 0;
+    return typeof attempt === 'number' && isFinite(attempt) && attempt > 0 ? attempt : 0;
+  }
+
+  async function clearRetry() {
+    await browser.storage.local.remove(RETRY_KEY);
     return browser.alarms.clear(RETRY_ALARM);
   }
 
-  function scheduleRetry() {
-    const minutes = Rates.backoffMinutes(retryAttempt);
-    retryAttempt += 1;
-    browser.alarms.create(RETRY_ALARM, { delayInMinutes: minutes });
+  /**
+   * The step is taken from the stored attempt and the next one is stored before
+   * the alarm is created, so the schedule advances even when nothing of this
+   * context survives to see the alarm it just asked for.
+   */
+  async function scheduleRetry() {
+    const attempt = await readRetryAttempt();
+    const update = {};
+    update[RETRY_KEY] = attempt + 1;
+    await browser.storage.local.set(update);
+    browser.alarms.create(RETRY_ALARM, { delayInMinutes: Rates.backoffMinutes(attempt) });
   }
 
   /**
@@ -81,7 +101,7 @@ if (typeof importScripts === 'function') importScripts('/lib/rates.js');
     });
 
     if (!result) {
-      scheduleRetry();
+      await scheduleRetry();
       return cache;
     }
 
