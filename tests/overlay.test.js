@@ -77,6 +77,10 @@ async function mount(body, stored, options) {
     },
   };
 
+  // Anything the page does to itself before the content script runs: a custom
+  // element upgrading and attaching its shadow root, for instance.
+  if (config.prepare) config.prepare(dom.window.document);
+
   SCRIPTS.forEach((source) => dom.window.eval(source));
   await sleep(120);
 
@@ -453,4 +457,136 @@ test('the badge is marked so page scripts and rescans can recognise it', async (
   // No inline styles: everything comes from badge.css, which is isolated with
   // `all: initial`.
   assert.equal(badge.getAttribute('style'), null);
+});
+
+// --- shadow DOM ------------------------------------------------------------
+// komplett.se builds its product cards as custom elements and nests four open
+// shadow roots: komplett-search-results > komplett-product-card-container >
+// komplett-product-card > komplett-product-card-price. Neither a TreeWalker nor
+// a MutationObserver crosses a shadow boundary, so the whole page read as
+// having no prices on it at all.
+
+/** Builds the host chain the shop uses, with `html` inside the innermost root. */
+function nestShadow(document, tags, html) {
+  let parent = document.body;
+  let root = null;
+  tags.forEach((tag) => {
+    const host = document.createElement(tag);
+    parent.appendChild(host);
+    root = host.attachShadow({ mode: 'open' });
+    parent = root;
+  });
+  root.innerHTML = html;
+  return root;
+}
+
+test('a price inside an open shadow root is badged', async () => {
+  // Upgraded before the content script runs, which is the ordinary case for a
+  // custom element that is already in the served markup.
+  let root = null;
+  const page = await mount('<div id="host"></div>', null, {
+    prepare(document) {
+      root = document.querySelector('#host').attachShadow({ mode: 'open' });
+      root.innerHTML = '<section class="primary">1 299 kr</section>';
+    },
+  });
+  await page.settle();
+
+  assert.deepEqual(
+    [...root.querySelectorAll('[data-worthit-badge]')].map((b) => b.textContent),
+    ['7h30m'],
+  );
+});
+
+test('nested shadow roots are reached, as the reported shop nests them', async () => {
+  const page = await mount('<div></div>');
+  const root = nestShadow(
+    page.document,
+    ['komplett-search-results', 'komplett-product-card-container', 'komplett-product-card', 'komplett-product-card-price'],
+    '<section class="primary">17 990:-</section><div class="regular-price">Tidigare pris 39 990:-</div>',
+  );
+  await page.settle();
+
+  assert.deepEqual(
+    [...root.querySelectorAll('[data-worthit-badge]')].map((b) => b.textContent),
+    ['13d', '29d'],
+  );
+});
+
+test('a badge in a shadow root takes the badge stylesheet with it', async () => {
+  // The root sees none of the document's styles, so without this the badge is
+  // styled by whatever the component says about a span -- on the reported page,
+  // the 46px of the price beside it.
+  let root = null;
+  const page = await mount('<div id="host"></div>', null, {
+    prepare(document) {
+      root = document.querySelector('#host').attachShadow({ mode: 'open' });
+      root.innerHTML = '<span>1 299 kr</span>';
+    },
+  });
+  await page.settle();
+
+  const adopted = root.adoptedStyleSheets ? root.adoptedStyleSheets.length : 0;
+  const element = root.querySelector('style');
+  assert.ok(adopted === 1 || element, 'the badge sheet never reached the shadow root');
+  if (element) assert.match(element.textContent, /data-worthit-badge/);
+});
+
+test('the shadow copy of the badge stylesheet is content/badge.css', async () => {
+  // It is a copy because there is nothing to read it from: the content script
+  // fetches nothing and the file is not web-accessible. This is what keeps the
+  // two from drifting.
+  const source = fs.readFileSync(path.join(root, 'content/content.js'), 'utf8');
+  const copy = source.match(/const BADGE_CSS = `([\s\S]*?)`;/);
+  assert.ok(copy, 'BADGE_CSS is gone from the content script');
+  const normalise = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ').trim();
+  assert.equal(
+    normalise(copy[1]),
+    normalise(fs.readFileSync(path.join(root, 'content/badge.css'), 'utf8')),
+  );
+});
+
+test('a price added to a shadow root later is badged too', async () => {
+  // A card that arrives after the first scan: the host lands in the page, the
+  // observer sees it, and the walk has to go into its root rather than past it.
+  let shadow = null;
+  const page = await mount('<div id="list"></div>', null, {
+    prepare(document) {
+      const host = document.createElement('komplett-product-card');
+      shadow = host.attachShadow({ mode: 'open' });
+      shadow.innerHTML = '<div class="card">Inget pris än</div>';
+      document.body.appendChild(document.createComment('card arrives below'));
+      document.defaultView.__card = host;
+    },
+  });
+  await page.settle();
+  assert.equal(shadow.querySelectorAll('[data-worthit-badge]').length, 0);
+
+  page.document.querySelector('#list').appendChild(page.dom.window.__card);
+  shadow.querySelector('.card').innerHTML = '<span>1 299 kr</span>';
+  await page.settle();
+
+  assert.deepEqual(
+    [...shadow.querySelectorAll('[data-worthit-badge]')].map((b) => b.textContent),
+    ['7h30m'],
+  );
+});
+
+test('badges inside a shadow root are removed when the site is switched off', async () => {
+  let shadow = null;
+  const page = await mount('<div id="host"></div>', null, {
+    prepare(document) {
+      shadow = document.querySelector('#host').attachShadow({ mode: 'open' });
+      shadow.innerHTML = '<span>1 299 kr</span>';
+    },
+  });
+  await page.settle();
+  assert.equal(shadow.querySelectorAll('[data-worthit-badge]').length, 1);
+
+  await page.change({ sites: { 'butik.example.se': { disabled: true, forceCurrency: null } } });
+  assert.equal(
+    shadow.querySelectorAll('[data-worthit-badge]').length,
+    0,
+    'a badge in a shadow root is invisible to document.querySelectorAll',
+  );
 });
