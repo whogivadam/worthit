@@ -22,18 +22,42 @@ const root = path.join(__dirname, '..');
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 const manifest = JSON.parse(read('manifest.json'));
 
+// The names the background uses, repeated here so a rename shows up as a failing
+// test rather than as a retry that silently never fires.
+const RETRY_ALARM = 'worthit-rates-retry';
+const RETRY_KEY = 'ratesRetryAttempt';
+
+/** One tick of the event loop, after which every pending promise has settled. */
+function settle() {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
 /**
  * Evaluates the service-worker entry in a context with the worker globals and
  * none of the page ones, and records what it did on the way up.
+ *
+ * `options.store` is storage.local. Passing the same object to two boots is a
+ * restart of the background context: fresh globals, the same storage, which is
+ * exactly what Chrome and Firefox do between two alarms.
+ * `options.respond` stands in for the network; by default every request fails.
  */
-function bootServiceWorker() {
-  const calls = { listeners: [], alarms: [], imported: [], fetched: 0 };
+function bootServiceWorker(options) {
+  const config = options || {};
+  const store = config.store || {};
+  const calls = { listeners: [], handlers: {}, alarms: [], retryDelays: [], imported: [], fetched: 0 };
+
+  function listen(name) {
+    return (handler) => {
+      calls.listeners.push(name);
+      calls.handlers[name] = handler;
+    };
+  }
 
   const sandbox = {
     console: { warn() {}, error() {} },
-    fetch: async () => {
+    fetch: async (url) => {
       calls.fetched += 1;
-      return { ok: false };
+      return config.respond ? config.respond(url) : { ok: false };
     },
     importScripts(...files) {
       files.forEach((file) => {
@@ -43,18 +67,29 @@ function bootServiceWorker() {
       });
     },
     browser: {
-      storage: { local: { get: async () => ({}), set: async () => {} } },
+      storage: {
+        local: {
+          get: async (key) => (key in store ? { [key]: store[key] } : {}),
+          set: async (update) => Object.assign(store, update),
+          remove: async (key) => {
+            delete store[key];
+          },
+        },
+      },
       alarms: {
-        create: (name) => calls.alarms.push(name),
+        create: (name, info) => {
+          calls.alarms.push(name);
+          if (name === RETRY_ALARM) calls.retryDelays.push(info && info.delayInMinutes);
+        },
         get: async () => null,
         clear: async () => {},
-        onAlarm: { addListener: () => calls.listeners.push('alarms.onAlarm') },
+        onAlarm: { addListener: listen('alarms.onAlarm') },
       },
       runtime: {
         getURL: (p) => 'chrome-extension://worthit/' + p,
-        onInstalled: { addListener: () => calls.listeners.push('runtime.onInstalled') },
-        onStartup: { addListener: () => calls.listeners.push('runtime.onStartup') },
-        onMessage: { addListener: () => calls.listeners.push('runtime.onMessage') },
+        onInstalled: { addListener: listen('runtime.onInstalled') },
+        onStartup: { addListener: listen('runtime.onStartup') },
+        onMessage: { addListener: listen('runtime.onMessage') },
       },
     },
   };
@@ -129,4 +164,61 @@ test('it does not fetch merely by starting up', async () => {
   // synchronously during evaluation.
   const { calls } = bootServiceWorker();
   assert.equal(calls.fetched, 0, 'no fetch during evaluation');
+});
+
+test('the retry backoff survives the background context being torn down', async () => {
+  // The bug this covers: the attempt counter lived in a module variable, and the
+  // retry alarm always fires into a fresh context where that variable is back at
+  // 0. Every failure therefore asked for one minute, forever, instead of backing
+  // off -- and a background that only wakes to retry never notices.
+  //
+  // Each boot below is one of those contexts. Nothing crosses between them but
+  // storage, as in the browser.
+  const store = {};
+
+  for (const expected of [1, 5, 30, 30]) {
+    const { calls } = bootServiceWorker({ store });
+    await calls.handlers['runtime.onStartup']();
+    await settle();
+    assert.deepEqual(
+      calls.retryDelays,
+      [expected],
+      `a failure with ${store[RETRY_KEY] - 1} behind it should retry in ${expected} minutes`
+    );
+  }
+
+  assert.equal(store[RETRY_KEY], 4, 'four failures should have been counted');
+});
+
+test('what the retry stores is a count, in storage.local, and nothing else', async () => {
+  const store = {};
+  const { calls } = bootServiceWorker({ store });
+  await calls.handlers['runtime.onStartup']();
+  await settle();
+
+  assert.deepEqual(Object.keys(store), [RETRY_KEY], 'a failed refresh must not write a cache');
+  assert.equal(typeof store[RETRY_KEY], 'number', 'an attempt count is a number, not user data');
+});
+
+test('a successful refresh resets the schedule to the first step', async () => {
+  const rates = { result: 'success', base_code: 'USD', time_last_update_unix: 1767225600, rates: { SEK: 10 } };
+  const store = {};
+  store[RETRY_KEY] = 2;
+
+  const good = bootServiceWorker({
+    store,
+    respond: async () => ({ ok: true, json: async () => rates }),
+  });
+  await good.calls.handlers['runtime.onStartup']();
+  await settle();
+
+  assert.equal(RETRY_KEY in store, false, 'success has to clear the stored attempt');
+
+  // And the next failure, in yet another context, starts the schedule over. It
+  // goes through the retry alarm because the cache is fresh now, and only a
+  // forced refresh reaches the network at all.
+  const bad = bootServiceWorker({ store });
+  await bad.calls.handlers['alarms.onAlarm']({ name: RETRY_ALARM });
+  await settle();
+  assert.deepEqual(bad.calls.retryDelays, [1]);
 });
