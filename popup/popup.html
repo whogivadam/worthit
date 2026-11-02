@@ -102,6 +102,11 @@
             rel="noreferrer"
             data-i18n="rates.attribution"
           ></a>
+          <!-- Filled from the manifest at render time, so it cannot drift from
+               the build the reader is actually running. Bare "v0.4.1": the
+               number is the content, and a label would need translating to say
+               nothing. -->
+          <p id="version" class="muted"></p>
         </div>
         <button id="refresh" class="icon" type="button" data-i18n="rates.refresh"></button>
       </footer>
