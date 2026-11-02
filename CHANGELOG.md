@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/whogivadam/worthit/compare/v0.4.1...v0.5.0) (2026-11-02)
+
+
+### Features
+
+* **popup:** show the extension version in the footer ([#79](https://github.com/whogivadam/worthit/issues/79)) ([fa3709d](https://github.com/whogivadam/worthit/commit/fa3709d67cd534e0aae679afb3ecbbef4bb4f228))
+
+
+### Bug Fixes
+
+* **overlay:** say what a badge means to a screen reader ([#78](https://github.com/whogivadam/worthit/issues/78)) ([4b51fb0](https://github.com/whogivadam/worthit/commit/4b51fb0f05bf342d9b7ed52ed1cf044bf1a9fba4))
+
 ## [0.4.1](https://github.com/whogivadam/worthit/compare/v0.4.0...v0.4.1) (2026-11-01)
 
 
