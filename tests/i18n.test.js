@@ -258,6 +258,8 @@ const SCRIPTS = [
 
 const RATES = { USD: 1, SEK: 9.8785 };
 
+const STUB_VERSION = '7.6.5';
+
 function storedWith(language) {
   return {
     settings: {
@@ -282,7 +284,8 @@ function storedWith(language) {
 }
 
 /** Boots the real popup over its real HTML. Returns the window and what it saved. */
-async function openPopup(language, browserLanguage) {
+async function openPopup(language, browserLanguage, options) {
+  const config = options || {};
   const dom = new JSDOM(read('popup/popup.html'), {
     runScripts: 'outside-only',
     url: 'moz-extension://worthit/popup/popup.html',
@@ -306,7 +309,12 @@ async function openPopup(language, browserLanguage) {
       onChanged: { addListener() {} },
     },
     tabs: { query: async () => [{ url: 'https://butik.example.se/p/1' }] },
-    runtime: { sendMessage: async () => null },
+    runtime: {
+      sendMessage: async () => null,
+      // Deliberately not the repository's own version: a test that stubbed the
+      // real one would pass just as happily against a hardcoded string.
+      getManifest: config.noManifest ? undefined : () => ({ version: STUB_VERSION }),
+    },
   };
   SCRIPTS.forEach((source) => window.eval(source));
   await new Promise((resolve) => window.setTimeout(resolve, 0));
@@ -348,6 +356,34 @@ test('with nothing stored, the browser language decides', async () => {
   const german = await openPopup(undefined, 'de-DE');
   assert.equal(german.document.documentElement.lang, 'en', 'an unsupported language gets English');
   assert.equal(german.document.getElementById('open-settings').textContent, 'SETTINGS');
+});
+
+test('the popup footer shows the running version, in both languages', async () => {
+  // #76. The stub is deliberately not the repository's own version, so a
+  // hardcoded 'v0.4.1' in the popup could not pass this.
+  const shipped = JSON.parse(read('manifest.json')).version;
+  assert.notEqual(STUB_VERSION, shipped, 'the stub has to differ from the real version');
+
+  for (const language of ['en', 'sv']) {
+    const { document } = await openPopup(language);
+    const version = document.getElementById('version');
+    assert.equal(version.textContent, `v${STUB_VERSION}`, `${language}: the manifest's version`);
+    assert.ok(version.classList.contains('muted'), `${language}: it stays muted`);
+    assert.ok(version.closest('.footer'), `${language}: it lives in the footer`);
+    assert.equal(
+      version.previousElementSibling.id,
+      'attribution',
+      `${language}: below the rate line and the attribution`
+    );
+  }
+});
+
+test('a browser that will not name the version leaves the line empty', async () => {
+  // The popup runs over its own HTML in the test suite and could run in a plain
+  // page; neither should throw, and neither should print a guess.
+  const { document } = await openPopup('en', 'en-US', { noManifest: true });
+  assert.equal(document.getElementById('version').textContent, '');
+  assert.equal(document.getElementById('rate-status').textContent.length > 0, true, 'and the rest of the footer still renders');
 });
 
 test('the language picker lists every language in its own language', async () => {

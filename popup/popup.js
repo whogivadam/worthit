@@ -498,6 +498,25 @@
     });
   }
 
+  // --- version ---------------------------------------------------------------
+
+  /**
+   * The running version, from the manifest the browser actually loaded -- not
+   * package.json and not a constant in here. release-please keeps those two in
+   * step and a test asserts it, but only the manifest cannot drift from what is
+   * installed, which is the whole point: a version in a screenshot answers
+   * "which build is this?" without a browser session. #69 and #70 both cost one.
+   *
+   * It is language-neutral, so it is written once at boot rather than on every
+   * repaint. A browser that will not say (no runtime.getManifest, which is the
+   * case in a bare page) leaves the line empty rather than guessing.
+   */
+  function renderVersion() {
+    const manifest =
+      browser.runtime && browser.runtime.getManifest ? browser.runtime.getManifest() : null;
+    $('version').textContent = manifest && manifest.version ? `v${manifest.version}` : '';
+  }
+
   // --- rate status -----------------------------------------------------------
 
   function renderRateStatus() {
@@ -719,6 +738,7 @@
     await load();
     state.host = await readActiveHost();
     applyTranslations();
+    renderVersion();
     buildPickers();
     wire();
     if (isConfigured(state.settings)) {
