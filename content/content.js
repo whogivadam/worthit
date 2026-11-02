@@ -237,10 +237,30 @@ span[data-worthit-badge] {
     });
   }
 
-  function makeBadge(label, tooltip) {
+  /**
+   * `spoken` is what assistive technology gets in place of the badge's own text.
+   *
+   * The badge sits in the shop's reading order, so a screen reader announces it
+   * either way: the only question is whether it announces something useful.
+   * '5.2d' is a glance-value with no unit a listener can resolve, and nothing in
+   * it says the extension rather than the shop is speaking -- so the badge
+   * carries the tooltip's own sentence instead, prefixed with the extension's
+   * name. Hiding the badge with aria-hidden would have been the quieter choice,
+   * and it would have decided on a blind reader's behalf that the one thing this
+   * extension exists to say is not for them.
+   *
+   * role="img" is what makes the name land. An accessible name on a generic
+   * span is not required to be exposed at all -- 'generic' does not support
+   * naming from the author -- and the role also makes the badge's own text
+   * presentational, so the sentence is heard instead of the sentence and then
+   * '5.2d'. The title stays for the sighted reader.
+   */
+  function makeBadge(label, tooltip, spoken) {
     const badge = document.createElement('span');
     badge.setAttribute(BADGE_ATTR, '');
     badge.setAttribute('title', tooltip);
+    badge.setAttribute('role', 'img');
+    badge.setAttribute('aria-label', `Worth It? ${spoken}`);
     badge.textContent = label;
     return badge;
   }
@@ -251,10 +271,8 @@ span[data-worthit-badge] {
    */
   function unknownBadge(price) {
     const what = price.currency || I18n.t('badge.thisCurrency');
-    return makeBadge(
-      '?',
-      ['Worth It?', price.raw, I18n.t('badge.noRate', { what: what })].join('\n'),
-    );
+    const why = I18n.t('badge.noRate', { what: what });
+    return makeBadge('?', ['Worth It?', price.raw, why].join('\n'), why);
   }
 
   function priceBadge(price) {
@@ -276,18 +294,25 @@ span[data-worthit-badge] {
         ? null
         : `${amountHome.toFixed(2)} ${home}`;
 
+    const workTime = I18n.t('badge.workTime', { time: I18n.formatHoursMinutes(totalHours) });
     const tooltip = [
       'Worth It?',
       price.raw.trim(),
       converted ? `= ${converted}` : null,
-      I18n.t('badge.ofYourWork', { time: I18n.formatHoursMinutes(totalHours) }),
+      `= ${workTime}`,
       // Only worth saying when a conversion actually happened.
       converted ? describeRate(price.currency, home) : null,
     ]
       .filter(Boolean)
       .join('\n');
 
-    return makeBadge(I18n.formatBadge(totalHours, state.settings.hoursPerWeek), tooltip);
+    // The spoken form is the precise duration, not the badge's rounded '5.2d':
+    // the page has just read the price out, and the hours are the answer to it.
+    return makeBadge(
+      I18n.formatBadge(totalHours, state.settings.hoursPerWeek),
+      tooltip,
+      workTime,
+    );
   }
 
   // --- scanning --------------------------------------------------------------

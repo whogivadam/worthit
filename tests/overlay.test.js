@@ -290,6 +290,55 @@ test('a home-currency price needs no conversion line', async () => {
   assert.match(title, /7 h 30 min of your work/);
 });
 
+test('the badge tells a screen reader what it means, not what it says', async () => {
+  // #77: the badge's own text is a glance-value. role="img" is what gets the
+  // name exposed at all and makes '7h30m' presentational, so a reader hears the
+  // sentence once rather than the sentence and then the compact form.
+  const page = await mount('<p>1 299 kr</p>');
+  const badge = page.badges()[0];
+  assert.equal(badge.getAttribute('role'), 'img');
+  assert.equal(badge.getAttribute('aria-label'), 'Worth It? 7 h 30 min of your work');
+  assert.equal(badge.textContent, '7h30m', 'and the sighted form is untouched');
+});
+
+test('the spoken form is the precise duration, not the rounded badge', async () => {
+  // 9 490 kr is 54 h 50 min, which the badge compresses to '6.9d'. Read out
+  // loud, '6.9d' resolves to nothing.
+  const page = await mount('<p>9 490 kr</p>');
+  const badge = page.badges()[0];
+  assert.equal(badge.textContent, '6.9d');
+  assert.equal(badge.getAttribute('aria-label'), 'Worth It? 54 h 50 min of your work');
+});
+
+test('the spoken form is translated, and matches the tooltip', async () => {
+  const page = await mount('<p>1 299 kr</p>', {
+    settings: Object.assign({}, DEFAULT_STORED.settings, { language: 'sv' }),
+  });
+  const badge = page.badges()[0];
+  assert.equal(badge.getAttribute('aria-label'), 'Worth It? 7 tim 30 min av ditt arbete');
+  assert.match(
+    badge.getAttribute('title'),
+    /7 tim 30 min av ditt arbete/,
+    'the label says what the tooltip says',
+  );
+});
+
+test('an unconvertible badge says why to a screen reader, in both languages', async () => {
+  const english = await mount('<p>Pris 500 ZWL</p>');
+  assert.equal(
+    english.badges()[0].getAttribute('aria-label'),
+    'Worth It? No exchange rate for ZWL, so this is not converted.',
+  );
+
+  const swedish = await mount('<p>Pris 500 ZWL</p>', {
+    settings: Object.assign({}, DEFAULT_STORED.settings, { language: 'sv' }),
+  });
+  assert.equal(
+    swedish.badges()[0].getAttribute('aria-label'),
+    'Worth It? Ingen växelkurs för ZWL, så detta är inte omräknat.',
+  );
+});
+
 test('the overlay stays off when it is switched off globally', async () => {
   const page = await mount('<p>1 299 kr</p>', {
     settings: Object.assign({}, DEFAULT_STORED.settings, { overlayEnabled: false }),
