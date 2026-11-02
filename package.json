@@ -24,6 +24,7 @@
     "publish:chrome": "chrome-webstore-upload --source web-ext-artifacts/*.zip",
     "snapshot": "node scripts/build-snapshot.js",
     "check-zip": "node scripts/check-zip.mjs",
+    "chrome:zip": "node scripts/chrome-zip.mjs",
     "check-privacy": "node scripts/check-privacy.mjs",
     "prepare": "husky"
   },
