@@ -491,6 +491,31 @@ test('opening hours and delivery times are not prices', async () => {
   assert.deepEqual(page.labels(), []);
 });
 
+test('a video timestamp is not a price', async () => {
+  // The bug this covers: a clock stops at 23:59, so an hour test alone let every
+  // 'mm:ss' past 24 minutes through -- and youtube.com badged its own player time
+  // display and every thumbnail duration, in SEK, because the reader's home
+  // currency is all it takes to corroborate ':dd'.
+  const page = await mount(
+    [
+      // The player's time display, as YouTube builds it: three spans, one text
+      // node each, so the duration is read entirely on its own.
+      '<div class="ytp-time-display">',
+      '<span class="ytp-time-current">12:45</span>',
+      '<span class="ytp-time-separator"> / </span>',
+      '<span class="ytp-time-duration">45:30</span>',
+      '</div>',
+      // A thumbnail duration badge, and a chapter list.
+      '<div class="badge-shape">25:30</div>',
+      '<p>1:04:20</p>',
+      '<ol><li>0:00 Intro</li><li>59:59 Outro</li></ol>',
+    ].join(''),
+    {},
+    { url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', lang: 'en' },
+  );
+  assert.deepEqual(page.labels(), []);
+});
+
 test('a Swedish price in ore still gets a badge beside the times', async () => {
   // The other half: the fix must not cost the form it was protecting.
   const page = await mount('<p>Öppet 10:00-18:00</p><p>499:99</p><p>1 299:-</p>');

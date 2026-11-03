@@ -258,10 +258,11 @@ const CASES = [
   ['Black Friday-199 kr', SE, 199, 'SEK'],
   ['SEK400', SE, 400, 'SEK'],
 
-  // --- clock times, not prices ----------------------------------------------
-  // ':dd' is the Swedish 499:99 form and 'H:MM' is the same shape, so every
-  // opening hour on a page read as a price. An hour of 0-23 against minutes of
-  // 0-59 is a time; 499:99 survives because 99 is no minute.
+  // --- times, not prices ----------------------------------------------------
+  // ':dd' is the Swedish 499:99 form and a time is the same shape, so every
+  // opening hour on a page read as a price. A time run is one or two digits and
+  // then one or more ':ss' groups; 499:99 survives because hundreds are no
+  // minute, and 19:90 because 90 is no second.
   ['09:55', NONE, null],
   ['09:55', SE, null],
   ['9:55', SE, null],
@@ -280,10 +281,38 @@ const CASES = [
   // one; a missed 12:15 costs one badge on shops still writing ore.
   ['12:15', SE, null],
   ['20:50', SE, null],
-  // The minutes make these impossible as a clock, so they stay prices.
+  // Media timestamps. A clock stops at 23:59 but 'mm:ss' runs to 59:59, and an
+  // hour test alone let everything from 24:00 up through -- which is what badged
+  // youtube.com's own player time and every thumbnail duration past 24 minutes.
+  ['24:00', SE, null],
+  ['25:30', SE, null],
+  ['45:30', SE, null],
+  ['59:59', SE, null],
+  ['99:55', SE, null],
+  ['12:45 / 45:30', SE, null],
+  ['1:04:20', SE, null],
+  ['1:04:20', NONE, null],
+  // The home currency is all it took to call ':dd' Swedish on youtube.com, so
+  // the reject has to hold on each rung that corroborates the quirk.
+  ['45:30', { homeCurrency: 'SEK' }, null],
+  ['45:30', { pageLocale: 'sv-SE' }, null],
+  ['45:30', { forcedCurrency: 'SEK' }, null],
+  // Only the first group has to be a real 00-59: junk on the end of a timestamp
+  // does not turn it back into 1 krona 4 ore.
+  ['1:04:99', SE, null],
+  // The seconds make these impossible as a time, so they stay prices.
   ['23:99', SE, 23.99, 'SEK'],
-  ['99:55', SE, 99.55, 'SEK'],
-  ['24:00', SE, 24, 'SEK'],
+  ['19:90', SE, 19.9, 'SEK'],
+  ['100:30', SE, 100.3, 'SEK'],
+  // A time run consumes its own text: rejecting it as a price must not leave its
+  // halves for the prefix and suffix passes, which read '1:30 kr' as 30 kronor.
+  ['45:30 kr', SE, null],
+  ['1:30 kr', SE, null],
+  ['12:15 kr', SE, null],
+  ['kr 1:30', SE, null],
+  // And it must consume no more than that: a price beside a time is still a price.
+  ['Oppet 10:00-18:00, kaffe 25 kr', SE, 25, 'SEK'],
+  ['12:45 / 45:30, 499:99', SE, 499.99, 'SEK'],
   // A quirk has to end where the number ends, or '09:555' reads as '09:55'.
   ['09:555', SE, null],
   // Dates carry a dash after digits, which is the shape of the '.-' suffix
