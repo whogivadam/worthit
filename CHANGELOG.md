@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/whogivadam/worthit/compare/v0.5.0...v0.5.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* **parser:** stop reading media timestamps as prices ([#82](https://github.com/whogivadam/worthit/issues/82)) ([f77c281](https://github.com/whogivadam/worthit/commit/f77c2819af66b19efe6b963ae166818dd245c23c))
+
 ## [0.5.0](https://github.com/whogivadam/worthit/compare/v0.4.1...v0.5.0) (2026-11-02)
 
 
