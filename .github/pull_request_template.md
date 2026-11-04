@@ -8,11 +8,11 @@ Closes #
 
 ## How tested
 
-<!-- `npm test`, `npm run lint`, `npx web-ext lint`, and what you checked by hand in Firefox. -->
+<!-- `npm test`, `npm run lint`, `npx web-ext lint`, and what you checked by hand in Firefox and Chrome. -->
 
 - [ ] `npm test`
 - [ ] `npm run lint`
-- [ ] Loaded as a temporary add-on in `about:debugging` and exercised the change
+- [ ] Loaded in Firefox (`about:debugging`) and Chrome (`chrome://extensions`) and exercised the change
 
 ## Screenshots
 
