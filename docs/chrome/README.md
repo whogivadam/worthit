@@ -190,11 +190,15 @@ failed after the GitHub release already existed.
 ❌ You may not edit or publish an item that is in review.
 ```
 
-The store will not publish over a version that is still under review, and for this extension review
-is the in-depth kind, because of the `<all_urls>` content script. v0.4.0 hit exactly this: the
+The store will not publish over a version that is still under review. v0.4.0 hit exactly this: the
 release was tagged, the zip attached and AMO submitted, and only the Chrome step failed, with 0.3.1
+— the first submission, which drew the in-depth review the `<all_urls>` content script triggers —
 still in review days after the listing went visible. A listing can be publicly visible while its
 version is still being reviewed — the two states are independent.
+
+That was the first review, not the usual one. Chrome review now clears about an hour after AMO
+approves the same version, so a collision now needs a second release within about an hour of the
+first.
 
 **The API will not warn you in advance.** `items.get?projection=DRAFT` reports `uploadState`, which
 describes a pending *draft* upload and nothing about the published version: it returns `NOT_FOUND`
