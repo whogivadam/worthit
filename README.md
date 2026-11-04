@@ -1,7 +1,7 @@
 # Worth It?
 
-A Firefox extension that turns any price into the time it costs you: the hours of work needed to pay
-for it, based on your own after-tax income.
+A browser extension for Firefox and Chrome that turns any price into the time it costs you: the
+hours of work needed to pay for it, based on your own after-tax income.
 
 Prices on a page get a small red badge — `3h45m`, or `2.5d` once it passes a working day — and the
 popup lets you check any amount by hand, in your currency or another one.
@@ -19,9 +19,8 @@ A price is a number until you know what it costs you. Hours are harder to ignore
 - **Firefox** — install from addons.mozilla.org:
   <https://addons.mozilla.org/firefox/addon/worth-it/>
 
-- **Chrome** — not listed yet. The extension runs in Chrome 148 and newer from the same build; see
-  [docs/chrome/README.md](docs/chrome/README.md) for the store work still outstanding. Until then,
-  load it unpacked as below.
+- **Chrome** — install from the Chrome Web Store:
+  <https://chromewebstore.google.com/detail/worth-it/ihfcggecmcnhkblcnjcgpecobbfpbngm>
 
 - **Development** — load it from source, no build step needed:
   - *Firefox*: open `about:debugging#/runtime/this-firefox`, choose **Load Temporary Add-on** and
@@ -31,9 +30,10 @@ A price is a number until you know what it costs you. Hours are harder to ignore
     pick the repository root. The background runs as a service worker and is reported *inactive*
     whenever it is idle, which is normal.
 
-Requires Firefox 140 or newer, or Chrome 148 or newer. One build serves both: `manifest.json`
-declares a background event page for Firefox and a service worker for Chrome, so there is no second
-manifest and no build step. See [docs/chrome/README.md](docs/chrome/README.md).
+Requires Firefox 140 or newer, Firefox for Android 142 or newer, or Chrome 148 or newer. One build
+serves every browser: `manifest.json` declares a background event page for Firefox and a service
+worker for Chrome, so there is no second manifest. How the Chrome side works and is published:
+[docs/chrome/README.md](docs/chrome/README.md).
 
 ## Using it
 
@@ -55,12 +55,13 @@ looking at, or force a particular currency on that site when its prices are ambi
 ## Development
 
 ```sh
-npm install          # also installs the git hooks
-npm test             # Node's built-in test runner, no browser needed
-npm run lint         # eslint
-npx web-ext lint     # extension-specific linting
-npm run build        # writes web-ext-artifacts/*.zip
-npm run check-zip    # asserts the zip holds only runtime files
+npm install           # also installs the git hooks
+npm test              # Node's built-in test runner, no browser needed
+npm run lint          # eslint
+npx web-ext lint      # extension-specific linting
+npm run build         # writes web-ext-artifacts/*.zip
+npm run check-zip     # asserts the zip holds only runtime files
+npm run check-privacy # asserts no new network calls or remote code
 ```
 
 `npm test` must pass before a build. There is no bundler, minifier or transpiler — the extension
