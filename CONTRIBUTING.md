@@ -24,8 +24,15 @@ npm run build        # produces web-ext-artifacts/*.zip
 npm run check-zip    # asserts the zip holds only runtime files
 ```
 
-Load the extension while developing: open `about:debugging#/runtime/this-firefox` in Firefox,
-choose **Load Temporary Add-on**, and pick `manifest.json` in the repository root.
+Load the extension while developing:
+
+- *Firefox*: open `about:debugging#/runtime/this-firefox`, choose **Load Temporary Add-on**, and
+  pick `manifest.json` in the repository root.
+- *Chrome*: open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked**, and
+  pick the repository root.
+
+One `manifest.json` serves both browsers; see [docs/chrome/README.md](docs/chrome/README.md) for how
+and for the warning each browser shows about the other's background key.
 
 There is no bundler, minifier or transpiler, and there must not be one: the extension ships its
 source exactly as written, which is also why AMO needs no separate source-code submission. Files in
@@ -93,9 +100,10 @@ stable.
 
 release-please keeps a release pull request open, writes `CHANGELOG.md` (never edit it by hand) and
 bumps the version in both `package.json` and `manifest.json`. Merging that pull request tags the
-release, attaches the unsigned zip to the GitHub Release and submits the version to AMO for review.
-AMO credentials live only in the `AMO_JWT_ISSUER` and `AMO_JWT_SECRET` GitHub Actions secrets and
-must never appear in the repository.
+release, attaches the unsigned zip to the GitHub Release and submits the same zip to AMO and to the
+Chrome Web Store for review. Store credentials live only in GitHub Actions secrets —
+`AMO_JWT_ISSUER` and `AMO_JWT_SECRET` for AMO, the five `CHROME_*` secrets listed in
+[docs/chrome/README.md](docs/chrome/README.md) for Chrome — and must never appear in the repository.
 
 The release pull request is created with `GITHUB_TOKEN`, which cannot trigger workflows, so no
 checks ever report on it and branch protection shows it as blocked. Merge it with
@@ -106,4 +114,9 @@ the build and both guards before it signs.
 published, and re-running the job will not help: release-please runs first, sees the release, and
 every later step is skipped. Use the **Release** workflow's *Run workflow* button instead and give
 it the existing tag. That path re-runs the tests, the build and both guards against that tag, checks
-the tag matches the version it carries, and submits again.
+the tag matches the version it carries, and submits to both stores again.
+
+**The Chrome submission is non-blocking.** It runs last with `continue-on-error`, so a failure
+there — usually an expired refresh token or a previous version still in review — leaves a published
+release and a zip to upload by hand with `npm run chrome:zip`. See
+[docs/chrome/README.md](docs/chrome/README.md).

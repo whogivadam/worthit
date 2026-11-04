@@ -52,8 +52,8 @@ body:
   - type: input
     id: version
     attributes:
-      label: Extension and Firefox version
-      placeholder: "0.1.0 / Firefox 140"
+      label: Extension version, browser and its version
+      placeholder: "0.5.1 / Chrome 156"
     validations:
       required: true
   - type: textarea
