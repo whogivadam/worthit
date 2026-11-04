@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.2](https://github.com/whogivadam/worthit/compare/v0.5.1...v0.5.2) (2026-11-04)
+
+
+### Documentation
+
+* **release:** record that Chrome review now clears within an hour ([#91](https://github.com/whogivadam/worthit/issues/91)) ([aab5ac5](https://github.com/whogivadam/worthit/commit/aab5ac5459d71c9a4066e1b809b96b4c7edd8254))
+* **repo:** bring the README up to date with the Chrome release ([#86](https://github.com/whogivadam/worthit/issues/86)) ([9b11bb1](https://github.com/whogivadam/worthit/commit/9b11bb180122c1801c3e0a53753a2d00bfe97a4c)), closes [#85](https://github.com/whogivadam/worthit/issues/85)
+* **repo:** make the repo docs and templates browser-neutral ([#88](https://github.com/whogivadam/worthit/issues/88)) ([4890553](https://github.com/whogivadam/worthit/commit/4890553fae19257e2dc2dd14523eac3c58db0473)), closes [#87](https://github.com/whogivadam/worthit/issues/87)
+
 ## [0.5.1](https://github.com/whogivadam/worthit/compare/v0.5.0...v0.5.1) (2026-11-03)
 
 
