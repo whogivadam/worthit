@@ -49,6 +49,12 @@ The hourly rate is `monthly / (hours_per_week * 52 / 12)`.
 Changing the language takes effect at once, in the popup and in the badges already on the page, and
 is saved as you pick it rather than on **SAVE**.
 
+Prices in other currencies are converted for you, with nothing to switch. Worth It? works out each
+price's currency from its symbol or code, the page's own price metadata, its language and its
+domain, converts it to your home currency at the latest exchange rate, and shows the hours for that.
+Hover a badge to see the converted amount and the rate source and date. A price in a currency with
+no available rate gets a `?` badge rather than a guess.
+
 From the popup you can also turn the page overlay off, disable the extension on the site you are
 looking at, or force a particular currency on that site when its prices are ambiguous.
 
