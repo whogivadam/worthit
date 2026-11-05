@@ -323,6 +323,21 @@ test('the spoken form is translated, and matches the tooltip', async () => {
   );
 });
 
+test('a Swedish page writes its decimals with a comma, badge and tooltip alike', async () => {
+  const swedish = { settings: Object.assign({}, DEFAULT_STORED.settings, { language: 'sv' }) };
+  const local = await mount('<p>9 490 kr</p>', swedish);
+  assert.equal(local.badges()[0].textContent, '6,9d');
+
+  // a foreign price shows the converted amount and the rate in the tooltip
+  const foreign = await mount('<p>$100.00</p>', swedish);
+  const title = foreign.badges()[0].getAttribute('title');
+  assert.match(title, /\d+,\d{2} SEK/, 'the converted amount');
+  assert.match(title, /1 USD = \d+,\d+ SEK/, 'the rate');
+  // the page's own price is quoted as the page wrote it; everything after is ours
+  const ours = title.split('\n').filter((line) => line.trim() !== '$100.00').join('\n');
+  assert.doesNotMatch(ours, /\d\.\d/, 'no decimal point left in what Worth It? wrote');
+});
+
 test('an unconvertible badge says why to a screen reader, in both languages', async () => {
   const english = await mount('<p>Pris 500 ZWL</p>');
   assert.equal(

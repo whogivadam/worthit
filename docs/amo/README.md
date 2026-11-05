@@ -7,7 +7,7 @@ What goes in the addons.mozilla.org listing, and how to produce it again.
 | `../../amo-metadata.json` | listing metadata passed to `web-ext sign --amo-metadata` |
 | `../../icons/icon-48.png`, `icon-96.png` | shipped in the extension, referenced from `manifest.json` |
 | `../../icons/icon-128.png` | the listing icon, and shipped in the zip since Chrome shows it in the browser too |
-| `harness/se-shop.html`, `harness/us-shop.html` | mock shops for the overlay screenshots |
+| `harness/*-shop.html` | mock shops for the screenshots, one per market |
 | `01-*.png` … `05-*.png` | the five listing screenshots, 1280 × 800 |
 
 Icons are generated, not hand-drawn: `node scripts/build-icons.mjs` rewrites all three byte for byte.
@@ -33,6 +33,26 @@ work, which is worth knowing if a screenshot ever looks wrong.
 
 Expected result with the settings below: **9 badges on each page.** If a page produces a different
 number, something has regressed; `tests/overlay.test.js` covers the same cases.
+
+The AMO screenshots use those two. AMO shows one set of screenshots for every language, whereas Chrome
+takes a set per language, so there is one more shop for each market the UI is translated for. Each
+writes prices the way that market does, and its footer carries that market's date, phone and order
+number formats, none of which may be badged:
+
+| Page | Market | Prices written as |
+| --- | --- | --- |
+| `de-shop.html` | Germany, EUR | `1.899,00 €`, `UVP 249,99 €`, `9,99 € – 24,99 €` |
+| `fr-shop.html` | France, EUR | `1 899,00 €` (narrow no-break space), `de 9,99 € à 24,99 €` |
+| `es-shop.html` | Spain, EUR | `1.899,00 €`, `9,99 € - 24,99 €` |
+| `br-shop.html` | Brazil, BRL | `R$ 12.999,00`, `R$` and `499,90` in two elements |
+| `jp-shop.html` | Japan, JPY | `¥298,000`, `8,980円`, `5,000円以上`, `¥980〜¥2,480` |
+| `cn-shop.html` | China, CNY | `¥12,999.00`, `￥89`, `299元`, `满99元包邮` |
+| `tw-shop.html` | Taiwan, TWD | `NT$59,990`, `1,290元`, `滿990元免運` |
+
+Every page also has 9 badges, and `tests/harness.test.js` holds each of them to that count and to
+the currency each badge was read in. The Chrome screenshots for a language are taken on its own
+market's shop, with that market's currency as the home currency; the US shop is the second,
+converted page.
 
 ## Capturing the screenshots
 
@@ -112,13 +132,31 @@ or re-require it.
 translation reaches the store with the next release and needs no visit to the
 Developer Hub.
 
-**AMO spells Swedish `sv-SE`. The extension spells it `sv`** — in `_locales/sv/`,
-in `I18n.LANGUAGES` and in the stored `language` setting. The two are not
-interchangeable: AMO will not accept `sv` as a listing locale, and the extension
-will not accept `sv-SE` as a UI language. The mismatch looks like a typo and is
-not one, so do not "correct" either side into line. `amo-metadata.json` is strict
-JSON with nowhere to write that down, which is why it is here and in
-`tests/tooling.test.js`.
+**AMO, the extension and `_locales/` spell some languages differently**, and
+none of them is a typo:
+
+| Language | UI code (`I18n.LANGUAGES`, stored setting) | `_locales/` | AMO listing locale |
+| --- | --- | --- | --- |
+| English | `en` | `en` | `en-US` |
+| Swedish | `sv` | `sv` | `sv-SE` |
+| French | `fr` | `fr` | `fr` |
+| German | `de` | `de` | `de` |
+| Spanish | `es` | `es` | `es-ES` |
+| Portuguese (Brazil) | `pt-BR` | `pt_BR` | `pt-BR` |
+| Japanese | `ja` | `ja` | `ja` |
+| Chinese, Simplified | `zh-CN` | `zh_CN` | `zh-CN` |
+| Chinese, Traditional | `zh-TW` | `zh_TW` | `zh-TW` |
+
+AMO will not accept `sv` or `es` as a listing locale, browsers want an underscore
+in `_locales/`, and the UI code has to be a BCP 47 tag because it goes into
+`<html lang>` and `Intl.DisplayNames`. Do not "correct" any column into line with
+another. `amo-metadata.json` is strict JSON with nowhere to write that down, so
+the map lives in `scripts/chrome-listing.js` and the tests read it from there.
+
+The French, German, Spanish, Portuguese, Japanese and Chinese listings are machine
+translations, like the UI strings they describe, pending review by native
+speakers. Where a listing quotes a badge, it writes the number the way that
+language's badge does: `2.5d` in English, `2,5d` in Swedish.
 
 Only prose is translated. `name` stays `en-US` only, because *Worth It?* is the
 product name and is left untranslated in `_locales/sv/messages.json` too, and
@@ -126,9 +164,10 @@ product name and is left untranslated in `_locales/sv/messages.json` too, and
 
 Two things the tests enforce, both easy to get wrong by hand:
 
-- **AMO caps `summary` at 250 characters.** Swedish runs longer than English --
-  206 against 186 for the same sentence -- so the margin is smaller than it looks.
-- **Every UI language must have a listing locale.** Adding a third language fails
+- **AMO caps `summary` at 250 characters.** Swedish and the Romance languages run
+  longer than English -- 206 and 237 (Spanish) against 186 for the same sentence --
+  so the margin is smaller than it looks.
+- **Every UI language must have a listing locale.** Adding a language fails
   `npm test` until the listing is translated too, rather than quietly leaving a
   store page in English.
 

@@ -51,7 +51,12 @@
       monthly: '',
       hourly: '',
       hoursPerWeek: 40,
-      homeCurrency: Currencies.currencyForLocale(navigator.language) || 'USD',
+      homeCurrency:
+        Currencies.currencyForLanguages(
+          navigator.languages && navigator.languages.length
+            ? navigator.languages
+            : [navigator.language]
+        ) || 'USD',
       overlayEnabled: true,
       language: I18n.resolve(null, navigator.language),
     };
@@ -593,9 +598,12 @@
     document.querySelectorAll('input[name="income-mode"]').forEach((radio) => {
       radio.checked = radio.value === mode;
     });
-    $('monthly').value = state.settings.monthly === '' ? '' : String(state.settings.monthly);
-    $('hourly').value = state.settings.hourly === '' ? '' : String(state.settings.hourly);
-    $('hours-per-week').value = String(state.settings.hoursPerWeek);
+    // Shown the way the reader types them: '32,5' in German, as readNumber
+    // already accepts, rather than the '32.5' they were stored as.
+    const shown = (value) => (value === '' ? '' : I18n.formatNumber(value));
+    $('monthly').value = shown(state.settings.monthly);
+    $('hourly').value = shown(state.settings.hourly);
+    $('hours-per-week').value = shown(state.settings.hoursPerWeek);
     $('overlay-enabled').checked = state.settings.overlayEnabled !== false;
     pickers['home-currency'].setValue(state.settings.homeCurrency);
     fillLanguageSelect();

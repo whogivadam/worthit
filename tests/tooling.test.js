@@ -321,11 +321,12 @@ test('the popup builds nodes instead of assigning markup', () => {
 });
 
 test('the AMO listing is translated wherever the extension is', () => {
-  // AMO spells Swedish 'sv-SE'; the extension spells it 'sv' in _locales/, in
-  // I18n.LANGUAGES and in the language setting. The two are not interchangeable
-  // and amo-metadata.json is strict JSON with nowhere to write that down, so it
-  // is recorded here and in docs/amo/README.md instead.
-  const AMO_LOCALE = { en: 'en-US', sv: 'sv-SE' };
+  // AMO spells Swedish 'sv-SE' and Spanish 'es-ES'; the extension spells them
+  // 'sv' and 'es' in _locales/, in I18n.LANGUAGES and in the language setting.
+  // The two are not interchangeable and amo-metadata.json is strict JSON with
+  // nowhere to write that down, so the map lives in scripts/chrome-listing.js,
+  // which needs it too, and is explained in docs/amo/README.md.
+  const { AMO_LOCALE } = require('../scripts/chrome-listing.js');
 
   // Prose the reader sees, which has to exist in every language the UI offers.
   const TRANSLATED = ['summary', 'description'];
@@ -380,34 +381,98 @@ test('every locale of the listing makes the same privacy claims', () => {
       claim: 'browser sync is never used',
       'en-US': /never uses browser sync/i,
       'sv-SE': /aldrig webbläsarsynkronisering/i,
+      fr: /n’utilise jamais la synchronisation du navigateur/i,
+      de: /nie die Browser-Synchronisierung/i,
+      'es-ES': /nunca usa la sincronización del navegador/i,
+      'pt-BR': /nunca usa a sincronização do navegador/i,
+      ja: /ブラウザーの同期を一切使用しない/,
+      'zh-CN': /从不使用浏览器同步/,
+      'zh-TW': /從不使用瀏覽器同步/,
     },
     {
       claim: 'there is only one kind of network request',
       'en-US': /(exactly|only|just) one kind of network request/i,
       'sv-SE': /(endast|exakt|bara) en typ av nätverksanrop/i,
+      fr: /(qu’un seul|un seul|uniquement un) type de requête réseau/i,
+      de: /(nur|genau) eine Art von Netzwerkanfrage/i,
+      'es-ES': /(un solo|solo un|únicamente un) tipo de petición de red/i,
+      'pt-BR': /(apenas|somente|só) um tipo de requisição de rede/i,
+      ja: /ネットワーク通信は1種類だけ/,
+      'zh-CN': /只发出一种网络请求/,
+      'zh-TW': /只發出一種網路請求/,
     },
     {
       claim: 'that request carries nothing but the USD-based rate table',
       'en-US': /USD as the base/i,
       'sv-SE': /USD som bas/i,
+      fr: /USD comme base/i,
+      de: /USD als Basis/i,
+      'es-ES': /USD como base/i,
+      'pt-BR': /USD como base/i,
+      ja: /USD を基準/,
+      'zh-CN': /以 USD 为基准/,
+      'zh-TW': /以 USD 為基準/,
     },
-    { claim: 'no cookies', 'en-US': /no cookies/i, 'sv-SE': /inga kakor/i },
+    {
+      claim: 'no cookies',
+      'en-US': /no cookies/i,
+      'sv-SE': /inga kakor/i,
+      fr: /aucun cookie/i,
+      de: /keine Cookies/i,
+      'es-ES': /ninguna cookie/i,
+      'pt-BR': /nenhum cookie/i,
+      ja: /Cookie もありません/i,
+      'zh-CN': /没有 Cookie/i,
+      'zh-TW': /沒有 Cookie/i,
+    },
     {
       claim: 'no analytics or telemetry',
       'en-US': /no analytics, telemetry/i,
       'sv-SE': /ingen analys, telemetri/i,
+      fr: /aucune mesure d’audience, télémétrie/i,
+      de: /keine Analyse, Telemetrie/i,
+      'es-ES': /no hay analítica, telemetría/i,
+      'pt-BR': /não há análise, telemetria/i,
+      ja: /アナリティクス、テレメトリー/,
+      'zh-CN': /没有数据分析、遥测/,
+      'zh-TW': /沒有數據分析、遙測/,
     },
     {
       claim: 'no third-party script, font or CDN',
       'en-US': /third-party/i,
       'sv-SE': /tredje part/i,
+      fr: /CDN tiers/i,
+      de: /Drittanbietern/i,
+      'es-ES': /de terceros/i,
+      'pt-BR': /de terceiros/i,
+      ja: /サードパーティ/,
+      'zh-CN': /第三方/,
+      'zh-TW': /第三方/,
     },
     {
       claim: 'the tabs permission is deliberately not requested',
       'en-US': /"tabs" permission/i,
       'sv-SE': /behörigheten "tabs"/i,
+      fr: /permission "tabs"/i,
+      de: /Berechtigung "tabs"/i,
+      'es-ES': /permiso "tabs"/i,
+      'pt-BR': /permissão "tabs"/i,
+      ja: /"tabs" 権限/,
+      'zh-CN': /"tabs" 权限/,
+      'zh-TW': /"tabs" 權限/,
     },
-    { claim: 'MIT licensed', 'en-US': /MIT/, 'sv-SE': /MIT/ },
+    {
+      claim: 'MIT licensed',
+      'en-US': /MIT/,
+      'sv-SE': /MIT/,
+      fr: /MIT/,
+      de: /MIT/,
+      'es-ES': /MIT/,
+      'pt-BR': /MIT/,
+      ja: /MIT/,
+      'zh-CN': /MIT/,
+      'zh-TW': /MIT/,
+    },
   ];
 
   const metadata = JSON.parse(read('amo-metadata.json'));
@@ -429,6 +494,35 @@ test('every locale of the listing makes the same privacy claims', () => {
   assert.deepEqual(manifest.browser_specific_settings.gecko.data_collection_permissions.required, [
     'none',
   ]);
+});
+
+test('the Chrome listing text exists in every language and never names Mozilla', () => {
+  // Chrome's long description is pasted by hand from npm run chrome:listing,
+  // which derives it from the AMO text. The AMO text names Mozilla, correctly,
+  // and that sentence reached the Chrome listing once before (docs/chrome).
+  const { AMO_LOCALE, VENDOR_NEUTRAL, chromeDescription } = require('../scripts/chrome-listing.js');
+  const i18n = require('../lib/i18n.js');
+  const metadata = JSON.parse(read('amo-metadata.json'));
+  const repo = metadata.homepage['en-US'];
+  assert.equal(repo, 'https://github.com/whogivadam/worthit');
+  i18n.LANGUAGES.forEach((language) => {
+    const locale = AMO_LOCALE[language];
+    const text = chromeDescription(language, metadata);
+    assert.doesNotMatch(text, /mozilla/i, `${language}: the Chrome text names Mozilla`);
+
+    // Chrome has no homepage link beside the listing, so the repository URL
+    // follows the MIT paragraph under OPEN SOURCE, once, on a line of its own.
+    const paragraphs = text.split('\n\n');
+    const at = paragraphs.indexOf(repo);
+    assert.ok(at > 0, `${language}: the repository link is missing`);
+    assert.match(paragraphs[at - 1], /\bMIT\b/, `${language}: the link follows the MIT paragraph`);
+    assert.equal(text.split(repo).length, 2, `${language}: the link appears once`);
+
+    // and nothing else changed: both edits undone give back the AMO text exactly
+    const [from, to] = VENDOR_NEUTRAL[locale];
+    const undone = text.replace(`\n\n${repo}`, '').replace(to, from);
+    assert.equal(undone, metadata.description[locale], `${language}: only the vendor and the link`);
+  });
 });
 
 test('the popup ships the required rate attribution, in every language', () => {

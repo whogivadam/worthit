@@ -28,6 +28,13 @@ const REQUIRED = [
   'lib/rates-snapshot.json',
   '_locales/en/messages.json',
   '_locales/sv/messages.json',
+  '_locales/fr/messages.json',
+  '_locales/de/messages.json',
+  '_locales/es/messages.json',
+  '_locales/pt_BR/messages.json',
+  '_locales/ja/messages.json',
+  '_locales/zh_CN/messages.json',
+  '_locales/zh_TW/messages.json',
   // Chrome shows the 128px icon in the browser as well as on the store listing,
   // so it ships. It used to be excluded as an AMO-listing-only asset.
   'icons/icon-128.png',

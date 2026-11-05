@@ -151,10 +151,32 @@ v0.1.0, starting with a full human review — which is worth remembering if a Ch
 back.
 
 **Do not paste that file's description into Chrome verbatim.** Its *PRIVACY: NOTHING IS COLLECTED*
-paragraph says browser sync would upload to "a Mozilla account", in both locales. That is right for
-AMO and wrong for Chrome, and it reached the Chrome listing once before it was caught. Drop the
-vendor from the sentence, or name Google, and leave `amo-metadata.json` itself alone — it is AMO
-listing copy, where naming Mozilla is correct.
+paragraph says browser sync would upload to "a Mozilla account", in every locale. That is right for
+AMO and wrong for Chrome, and it reached the Chrome listing once before it was caught. Leave
+`amo-metadata.json` itself alone — it is AMO listing copy, where naming Mozilla is correct — and
+paste the output of `npm run chrome:listing` instead, which swaps that one phrase for "a browser
+account" and refuses to print anything that still names Mozilla. It also puts the repository URL on
+its own line after the MIT paragraph under *OPEN SOURCE*: AMO shows the homepage as a link beside
+the listing, and Chrome's listing has no such field.
+
+**One listing per UI language.** Under **Store listing**, add each language the extension ships
+and paste its description:
+
+```sh
+npm run chrome:listing -- en      # English
+npm run chrome:listing -- sv      # Svenska
+npm run chrome:listing -- fr      # Français
+npm run chrome:listing -- de      # Deutsch
+npm run chrome:listing -- es      # Español
+npm run chrome:listing -- pt-BR   # Português (Brasil)
+npm run chrome:listing -- ja      # 日本語
+npm run chrome:listing -- zh-CN   # 简体中文
+npm run chrome:listing -- zh-TW   # 繁體中文
+```
+
+The short description under the name is not pasted: Chrome reads it from
+`_locales/*/messages.json` (`extensionDescription`), which is in the zip, so it arrives with the
+release. Chrome caps it at 132 characters.
 
 There is one genuine alternative, if review ever goes badly: `optional_host_permissions` plus
 `scripting.registerContentScripts` at runtime, so the reader grants broad access after install
@@ -162,9 +184,12 @@ instead of at it. It would likely shorten review. It also needs the `scripting` 
 flow and a changed first run, and it makes the extension do nothing until the reader opts in — which
 is a different product. Not worth doing pre-emptively.
 
-**Assets**, both of which already exist and need no work: the five screenshots in `docs/amo/` are
-1280 × 800, a size Chrome accepts, and `icons/icon-128.png` is the store icon. Unlike AMO, these go
-up through the same dashboard as everything else.
+**Assets.** `icons/icon-128.png` is the store icon. Screenshots are 1280 × 800, and unlike AMO,
+Chrome takes a separate set for each language of the listing. Take each language's set on its own
+market's mock shop in `docs/amo/harness/` (see `docs/amo/README.md`), with the UI in that language
+and that market's currency as the home currency, so a German reader sees euros on a German shop.
+The five English and Swedish shots in `docs/amo/` serve the English listing. Unlike AMO, these go up
+through the same dashboard as everything else.
 
 ## Automatic publishing
 

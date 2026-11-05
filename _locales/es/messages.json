@@ -1,0 +1,14 @@
+{
+  "extensionName": {
+    "message": "Worth It?",
+    "description": "Extension name, shown in about:addons and the toolbar. A product name: not translated."
+  },
+  "extensionDescription": {
+    "message": "Convierte cualquier precio en las horas de trabajo que te cuesta, en la ventana emergente y junto a los precios de cada tienda.",
+    "description": "One-line description shown in about:addons."
+  },
+  "actionTitle": {
+    "message": "Worth It?",
+    "description": "Tooltip on the toolbar button."
+  }
+}

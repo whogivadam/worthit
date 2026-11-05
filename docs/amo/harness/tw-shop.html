@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:locale" content="zh_TW" />
+    <title>青峰電子</title>
+    <!-- A mock shop for the store screenshots and tests/harness.test.js. Its prices
+         are written the way this market writes them; see docs/amo/README.md. -->
+    <style>
+      body { margin: 0; font-family: "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif; color: #1a1a1a; background: #f2f5f8; }
+      header { background: #1d4f73; color: #fff; padding: 18px 40px; display: flex; justify-content: space-between; align-items: center; }
+      header b { font-size: 20px; letter-spacing: 0.04em; }
+      nav { font-size: 14px; opacity: 0.85; }
+      nav span { margin-left: 22px; }
+      main { max-width: 1100px; margin: 0 auto; padding: 30px 40px 60px; }
+      h1 { font-size: 26px; margin: 0 0 4px; }
+      .lede { color: #555; margin: 0 0 26px; font-size: 15px; }
+      .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+      .card { background: #fff; border: 1px solid #ddd8d0; padding: 18px; }
+      .card h2 { font-size: 16px; margin: 0 0 6px; }
+      .card p { margin: 0 0 10px; font-size: 13px; color: #666; }
+      .card .price { font-size: 22px; font-weight: bold; color: #1d4f73; }
+      .card .was { font-size: 13px; color: #999; text-decoration: line-through; }
+      .card .sale { color: #b00; font-size: 13px; font-weight: bold; }
+      .split .amount { font-size: 22px; font-weight: bold; color: #1d4f73; }
+      .split .unit { font-size: 14px; color: #1d4f73; margin: 0 2px; }
+      footer { margin-top: 40px; border-top: 1px solid #ddd8d0; padding-top: 18px; font-size: 13px; color: #777; }
+      code { background: #eee; padding: 1px 4px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <b>青峰電子</b>
+      <nav><span>電腦</span><span>音響</span><span>優惠</span><span>客服</span></nav>
+    </header>
+
+    <main>
+      <h1>本週精選</h1>
+      <p class="lede">滿990元免運。價格均含稅。</p>
+
+      <div class="grid">
+        <div class="card">
+          <h2>顯示卡 RTX 4090</h2>
+          <p>24GB，三風扇。商品編號 884-21。</p>
+          <p class="price">NT$59,990</p>
+        </div>
+
+        <div class="card">
+          <h2>無線耳機</h2>
+          <p>主動降噪，續航40小時。</p>
+          <p><span class="was">NT$6,490</span> <span class="price">NT$3,490</span></p>
+          <p class="sale">省46%</p>
+        </div>
+
+        <div class="card split">
+          <h2>機械鍵盤</h2>
+          <p>價格分在兩個元素裡，許多真實商店都是這樣。</p>
+          <p><span class="amount">2,490</span><span class="unit">元</span></p>
+        </div>
+
+        <div class="card">
+          <h2>辦公滑鼠</h2>
+          <p>靜音按鍵，可充電。</p>
+          <p class="price">590元</p>
+        </div>
+
+        <div class="card">
+          <h2>螢幕支架</h2>
+          <p>適用32吋以內螢幕。</p>
+          <p class="price">1,290元</p>
+        </div>
+
+        <div class="card">
+          <h2>線材與轉接頭</h2>
+          <p>多款現貨。</p>
+          <p class="price">NT$199 - NT$499</p>
+        </div>
+      </div>
+
+      <footer>
+        <p>活動至 2026/01/15 止。客服專線：02-1234-5678。</p>
+        <p><code>RTX 4090</code> 等型號與 123-45-67 等訂單編號不是價格。</p>
+      </footer>
+    </main>
+  </body>
+</html>

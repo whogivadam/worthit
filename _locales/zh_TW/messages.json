@@ -1,0 +1,14 @@
+{
+  "extensionName": {
+    "message": "Worth It?",
+    "description": "Extension name, shown in about:addons and the toolbar. A product name: not translated."
+  },
+  "extensionDescription": {
+    "message": "把任何價格換算成你需要為它工作的時數，顯示在彈出視窗中，也顯示在任何商店的價格旁邊。",
+    "description": "One-line description shown in about:addons."
+  },
+  "actionTitle": {
+    "message": "Worth It?",
+    "description": "Tooltip on the toolbar button."
+  }
+}
