@@ -184,9 +184,12 @@ instead of at it. It would likely shorten review. It also needs the `scripting` 
 flow and a changed first run, and it makes the extension do nothing until the reader opts in — which
 is a different product. Not worth doing pre-emptively.
 
-**Assets**, both of which already exist and need no work: the five screenshots in `docs/amo/` are
-1280 × 800, a size Chrome accepts, and `icons/icon-128.png` is the store icon. Unlike AMO, these go
-up through the same dashboard as everything else.
+**Assets.** `icons/icon-128.png` is the store icon. Screenshots are 1280 × 800, and unlike AMO,
+Chrome takes a separate set for each language of the listing. Take each language's set on its own
+market's mock shop in `docs/amo/harness/` (see `docs/amo/README.md`), with the UI in that language
+and that market's currency as the home currency, so a German reader sees euros on a German shop.
+The five English and Swedish shots in `docs/amo/` serve the English listing. Unlike AMO, these go up
+through the same dashboard as everything else.
 
 ## Automatic publishing
 

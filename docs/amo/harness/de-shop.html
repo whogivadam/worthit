@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:locale" content="de_DE" />
+    <title>Kaufhalle – Elektronik</title>
+    <!-- A mock shop for the store screenshots and tests/harness.test.js. Its prices
+         are written the way this market writes them; see docs/amo/README.md. -->
+    <style>
+      body { margin: 0; font-family: "Helvetica Neue", Arial, sans-serif; color: #1a1a1a; background: #f4f5f1; }
+      header { background: #1f3d2b; color: #fff; padding: 18px 40px; display: flex; justify-content: space-between; align-items: center; }
+      header b { font-size: 20px; letter-spacing: 0.04em; }
+      nav { font-size: 14px; opacity: 0.85; }
+      nav span { margin-left: 22px; }
+      main { max-width: 1100px; margin: 0 auto; padding: 30px 40px 60px; }
+      h1 { font-size: 26px; margin: 0 0 4px; }
+      .lede { color: #555; margin: 0 0 26px; font-size: 15px; }
+      .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+      .card { background: #fff; border: 1px solid #ddd8d0; padding: 18px; }
+      .card h2 { font-size: 16px; margin: 0 0 6px; }
+      .card p { margin: 0 0 10px; font-size: 13px; color: #666; }
+      .card .price { font-size: 22px; font-weight: bold; color: #1f3d2b; }
+      .card .was { font-size: 13px; color: #999; text-decoration: line-through; }
+      .card .sale { color: #b00; font-size: 13px; font-weight: bold; }
+      .split .amount { font-size: 22px; font-weight: bold; color: #1f3d2b; }
+      .split .unit { font-size: 14px; color: #1f3d2b; margin: 0 2px; }
+      footer { margin-top: 40px; border-top: 1px solid #ddd8d0; padding-top: 18px; font-size: 13px; color: #777; }
+      code { background: #eee; padding: 1px 4px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <b>KAUFHALLE</b>
+      <nav><span>Computer</span><span>Audio</span><span>Angebote</span><span>Kundenservice</span></nav>
+    </header>
+
+    <main>
+      <h1>Angebote dieser Woche</h1>
+      <p class="lede">Kostenloser Versand ab 49,00 €. Alle Preise inkl. MwSt.</p>
+
+      <div class="grid">
+        <div class="card">
+          <h2>Grafikkarte RTX 4090</h2>
+          <p>24 GB, drei Lüfter. Artikelnummer 884-21.</p>
+          <p class="price">1.899,00 €</p>
+        </div>
+
+        <div class="card">
+          <h2>Kopfhörer, kabellos</h2>
+          <p>Geräuschunterdrückung, 40 Stunden Akku.</p>
+          <p><span class="was">UVP 249,99 €</span> <span class="price">129,99 €</span></p>
+          <p class="sale">-48 %</p>
+        </div>
+
+        <div class="card split">
+          <h2>Mechanische Tastatur</h2>
+          <p>Der Preis steht in zwei Elementen, wie in vielen echten Shops.</p>
+          <p><span class="amount">129,99</span><span class="unit">€</span></p>
+        </div>
+
+        <div class="card">
+          <h2>Maus, Büro</h2>
+          <p>Leise Klicks, aufladbar.</p>
+          <p class="price">49,99 €</p>
+        </div>
+
+        <div class="card">
+          <h2>Monitorarm</h2>
+          <p>Für Bildschirme bis 32 Zoll.</p>
+          <p class="price">89,90 €</p>
+        </div>
+
+        <div class="card">
+          <h2>Kabel und Adapter</h2>
+          <p>Mehrere Varianten auf Lager.</p>
+          <p class="price">9,99 € – 24,99 €</p>
+        </div>
+      </div>
+
+      <footer>
+        <p>Aktion gültig bis 15.01.2026. Kundenservice: +49 30 1234567.</p>
+        <p>Modellbezeichnungen wie <code>RTX 4090</code> und Bestellnummern wie 123-45-67 sind keine Preise.</p>
+      </footer>
+    </main>
+  </body>
+</html>

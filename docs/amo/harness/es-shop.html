@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:locale" content="es_ES" />
+    <title>Tienda Sol – Electrónica</title>
+    <!-- A mock shop for the store screenshots and tests/harness.test.js. Its prices
+         are written the way this market writes them; see docs/amo/README.md. -->
+    <style>
+      body { margin: 0; font-family: "Helvetica Neue", Arial, sans-serif; color: #1a1a1a; background: #f8f3ee; }
+      header { background: #7a2e12; color: #fff; padding: 18px 40px; display: flex; justify-content: space-between; align-items: center; }
+      header b { font-size: 20px; letter-spacing: 0.04em; }
+      nav { font-size: 14px; opacity: 0.85; }
+      nav span { margin-left: 22px; }
+      main { max-width: 1100px; margin: 0 auto; padding: 30px 40px 60px; }
+      h1 { font-size: 26px; margin: 0 0 4px; }
+      .lede { color: #555; margin: 0 0 26px; font-size: 15px; }
+      .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+      .card { background: #fff; border: 1px solid #ddd8d0; padding: 18px; }
+      .card h2 { font-size: 16px; margin: 0 0 6px; }
+      .card p { margin: 0 0 10px; font-size: 13px; color: #666; }
+      .card .price { font-size: 22px; font-weight: bold; color: #7a2e12; }
+      .card .was { font-size: 13px; color: #999; text-decoration: line-through; }
+      .card .sale { color: #b00; font-size: 13px; font-weight: bold; }
+      .split .amount { font-size: 22px; font-weight: bold; color: #7a2e12; }
+      .split .unit { font-size: 14px; color: #7a2e12; margin: 0 2px; }
+      footer { margin-top: 40px; border-top: 1px solid #ddd8d0; padding-top: 18px; font-size: 13px; color: #777; }
+      code { background: #eee; padding: 1px 4px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <b>TIENDA SOL</b>
+      <nav><span>Informática</span><span>Audio</span><span>Ofertas</span><span>Atención al cliente</span></nav>
+    </header>
+
+    <main>
+      <h1>Ofertas de la semana</h1>
+      <p class="lede">Envío gratis a partir de 49 €. IVA incluido.</p>
+
+      <div class="grid">
+        <div class="card">
+          <h2>Tarjeta gráfica RTX 4090</h2>
+          <p>24 GB, tres ventiladores. Ref. 884-21.</p>
+          <p class="price">1.899,00 €</p>
+        </div>
+
+        <div class="card">
+          <h2>Auriculares inalámbricos</h2>
+          <p>Cancelación de ruido, 40 horas de batería.</p>
+          <p><span class="was">249,99 €</span> <span class="price">129,99 €</span></p>
+          <p class="sale">-48 %</p>
+        </div>
+
+        <div class="card split">
+          <h2>Teclado mecánico</h2>
+          <p>El precio está en dos elementos, como en muchas tiendas reales.</p>
+          <p><span class="amount">129,99</span><span class="unit">€</span></p>
+        </div>
+
+        <div class="card">
+          <h2>Ratón de oficina</h2>
+          <p>Clic silencioso, recargable.</p>
+          <p class="price">49,99 €</p>
+        </div>
+
+        <div class="card">
+          <h2>Brazo para monitor</h2>
+          <p>Para pantallas de hasta 32 pulgadas.</p>
+          <p class="price">89,90 €</p>
+        </div>
+
+        <div class="card">
+          <h2>Cables y adaptadores</h2>
+          <p>Varios modelos en stock.</p>
+          <p class="price">9,99 € - 24,99 €</p>
+        </div>
+      </div>
+
+      <footer>
+        <p>Oferta válida hasta el 15/01/2026. Atención al cliente: +34 912 345 678.</p>
+        <p>Los modelos como <code>RTX 4090</code> y los números de pedido como 123-45-67 no son precios.</p>
+      </footer>
+    </main>
+  </body>
+</html>

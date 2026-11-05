@@ -7,7 +7,7 @@ What goes in the addons.mozilla.org listing, and how to produce it again.
 | `../../amo-metadata.json` | listing metadata passed to `web-ext sign --amo-metadata` |
 | `../../icons/icon-48.png`, `icon-96.png` | shipped in the extension, referenced from `manifest.json` |
 | `../../icons/icon-128.png` | the listing icon, and shipped in the zip since Chrome shows it in the browser too |
-| `harness/se-shop.html`, `harness/us-shop.html` | mock shops for the overlay screenshots |
+| `harness/*-shop.html` | mock shops for the screenshots, one per market |
 | `01-*.png` … `05-*.png` | the five listing screenshots, 1280 × 800 |
 
 Icons are generated, not hand-drawn: `node scripts/build-icons.mjs` rewrites all three byte for byte.
@@ -33,6 +33,26 @@ work, which is worth knowing if a screenshot ever looks wrong.
 
 Expected result with the settings below: **9 badges on each page.** If a page produces a different
 number, something has regressed; `tests/overlay.test.js` covers the same cases.
+
+The AMO screenshots use those two. AMO shows one set of screenshots for every language, whereas Chrome
+takes a set per language, so there is one more shop for each market the UI is translated for. Each
+writes prices the way that market does, and its footer carries that market's date, phone and order
+number formats, none of which may be badged:
+
+| Page | Market | Prices written as |
+| --- | --- | --- |
+| `de-shop.html` | Germany, EUR | `1.899,00 €`, `UVP 249,99 €`, `9,99 € – 24,99 €` |
+| `fr-shop.html` | France, EUR | `1 899,00 €` (narrow no-break space), `de 9,99 € à 24,99 €` |
+| `es-shop.html` | Spain, EUR | `1.899,00 €`, `9,99 € - 24,99 €` |
+| `br-shop.html` | Brazil, BRL | `R$ 12.999,00`, `R$` and `499,90` in two elements |
+| `jp-shop.html` | Japan, JPY | `¥298,000`, `8,980円`, `5,000円以上`, `¥980〜¥2,480` |
+| `cn-shop.html` | China, CNY | `¥12,999.00`, `￥89`, `299元`, `满99元包邮` |
+| `tw-shop.html` | Taiwan, TWD | `NT$59,990`, `1,290元`, `滿990元免運` |
+
+Every page also has 9 badges, and `tests/harness.test.js` holds each of them to that count and to
+the currency each badge was read in. The Chrome screenshots for a language are taken on its own
+market's shop, with that market's currency as the home currency; the US shop is the second,
+converted page.
 
 ## Capturing the screenshots
 

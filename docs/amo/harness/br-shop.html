@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:locale" content="pt_BR" />
+    <title>Loja Aurora – Eletrônicos</title>
+    <!-- A mock shop for the store screenshots and tests/harness.test.js. Its prices
+         are written the way this market writes them; see docs/amo/README.md. -->
+    <style>
+      body { margin: 0; font-family: "Helvetica Neue", Arial, sans-serif; color: #1a1a1a; background: #f1f6f3; }
+      header { background: #0b5d4b; color: #fff; padding: 18px 40px; display: flex; justify-content: space-between; align-items: center; }
+      header b { font-size: 20px; letter-spacing: 0.04em; }
+      nav { font-size: 14px; opacity: 0.85; }
+      nav span { margin-left: 22px; }
+      main { max-width: 1100px; margin: 0 auto; padding: 30px 40px 60px; }
+      h1 { font-size: 26px; margin: 0 0 4px; }
+      .lede { color: #555; margin: 0 0 26px; font-size: 15px; }
+      .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+      .card { background: #fff; border: 1px solid #ddd8d0; padding: 18px; }
+      .card h2 { font-size: 16px; margin: 0 0 6px; }
+      .card p { margin: 0 0 10px; font-size: 13px; color: #666; }
+      .card .price { font-size: 22px; font-weight: bold; color: #0b5d4b; }
+      .card .was { font-size: 13px; color: #999; text-decoration: line-through; }
+      .card .sale { color: #b00; font-size: 13px; font-weight: bold; }
+      .split .amount { font-size: 22px; font-weight: bold; color: #0b5d4b; }
+      .split .unit { font-size: 14px; color: #0b5d4b; margin: 0 2px; }
+      footer { margin-top: 40px; border-top: 1px solid #ddd8d0; padding-top: 18px; font-size: 13px; color: #777; }
+      code { background: #eee; padding: 1px 4px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <b>LOJA AURORA</b>
+      <nav><span>Informática</span><span>Áudio</span><span>Ofertas</span><span>Atendimento</span></nav>
+    </header>
+
+    <main>
+      <h1>Ofertas da semana</h1>
+      <p class="lede">Frete grátis acima de R$ 199,00. Entregamos a partir do CEP 01310-100.</p>
+
+      <div class="grid">
+        <div class="card">
+          <h2>Placa de vídeo RTX 4090</h2>
+          <p>24 GB, três ventoinhas. Código 884-21.</p>
+          <p class="price">R$ 12.999,00</p>
+        </div>
+
+        <div class="card">
+          <h2>Fone sem fio</h2>
+          <p>Cancelamento de ruído, 40 horas de bateria.</p>
+          <p><span class="was">R$ 1.299,00</span> <span class="price">R$ 699,00</span></p>
+          <p class="sale">-46%</p>
+        </div>
+
+        <div class="card split">
+          <h2>Teclado mecânico</h2>
+          <p>O preço está em dois elementos, como em muitas lojas reais.</p>
+          <p><span class="unit">R$</span><span class="amount">499,90</span></p>
+        </div>
+
+        <div class="card">
+          <h2>Mouse de escritório</h2>
+          <p>Clique silencioso, recarregável.</p>
+          <p class="price">R$ 89,90</p>
+        </div>
+
+        <div class="card">
+          <h2>Suporte para monitor</h2>
+          <p>Para telas de até 32 polegadas.</p>
+          <p class="price">R$ 249,90</p>
+        </div>
+
+        <div class="card">
+          <h2>Cabos e adaptadores</h2>
+          <p>Vários modelos em estoque.</p>
+          <p class="price">R$ 19,90 - R$ 49,90</p>
+        </div>
+      </div>
+
+      <footer>
+        <p>Oferta válida até 15/01/2026. Atendimento: (11) 91234-5678.</p>
+        <p>Modelos como <code>RTX 4090</code> e números de pedido como 123-45-67 não são preços.</p>
+      </footer>
+    </main>
+  </body>
+</html>
