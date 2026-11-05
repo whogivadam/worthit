@@ -1,0 +1,14 @@
+{
+  "extensionName": {
+    "message": "Worth It?",
+    "description": "Extension name, shown in about:addons and the toolbar. A product name: not translated."
+  },
+  "extensionDescription": {
+    "message": "あらゆる価格を、それを払うのに必要な労働時間に換算。ポップアップでも、どのショップの価格の横にも表示します。",
+    "description": "One-line description shown in about:addons."
+  },
+  "actionTitle": {
+    "message": "Worth It?",
+    "description": "Tooltip on the toolbar button."
+  }
+}

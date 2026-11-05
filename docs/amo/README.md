@@ -112,13 +112,29 @@ or re-require it.
 translation reaches the store with the next release and needs no visit to the
 Developer Hub.
 
-**AMO spells Swedish `sv-SE`. The extension spells it `sv`** — in `_locales/sv/`,
-in `I18n.LANGUAGES` and in the stored `language` setting. The two are not
-interchangeable: AMO will not accept `sv` as a listing locale, and the extension
-will not accept `sv-SE` as a UI language. The mismatch looks like a typo and is
-not one, so do not "correct" either side into line. `amo-metadata.json` is strict
-JSON with nowhere to write that down, which is why it is here and in
-`tests/tooling.test.js`.
+**AMO, the extension and `_locales/` spell some languages differently**, and
+none of them is a typo:
+
+| Language | UI code (`I18n.LANGUAGES`, stored setting) | `_locales/` | AMO listing locale |
+| --- | --- | --- | --- |
+| English | `en` | `en` | `en-US` |
+| Swedish | `sv` | `sv` | `sv-SE` |
+| German | `de` | `de` | `de` |
+| Spanish | `es` | `es` | `es-ES` |
+| Portuguese (Brazil) | `pt-BR` | `pt_BR` | `pt-BR` |
+| Japanese | `ja` | `ja` | `ja` |
+| Chinese, Simplified | `zh-CN` | `zh_CN` | `zh-CN` |
+| Chinese, Traditional | `zh-TW` | `zh_TW` | `zh-TW` |
+
+AMO will not accept `sv` or `es` as a listing locale, browsers want an underscore
+in `_locales/`, and the UI code has to be a BCP 47 tag because it goes into
+`<html lang>` and `Intl.DisplayNames`. Do not "correct" any column into line with
+another. `amo-metadata.json` is strict JSON with nowhere to write that down, so
+the map lives in `scripts/chrome-listing.js` and the tests read it from there.
+
+The German, Spanish, Portuguese, Japanese and Chinese listings are machine
+translations, like the UI strings they describe, pending review by native
+speakers.
 
 Only prose is translated. `name` stays `en-US` only, because *Worth It?* is the
 product name and is left untranslated in `_locales/sv/messages.json` too, and
@@ -126,9 +142,10 @@ product name and is left untranslated in `_locales/sv/messages.json` too, and
 
 Two things the tests enforce, both easy to get wrong by hand:
 
-- **AMO caps `summary` at 250 characters.** Swedish runs longer than English --
-  206 against 186 for the same sentence -- so the margin is smaller than it looks.
-- **Every UI language must have a listing locale.** Adding a third language fails
+- **AMO caps `summary` at 250 characters.** Swedish and the Romance languages run
+  longer than English -- 206 and 237 (Spanish) against 186 for the same sentence --
+  so the margin is smaller than it looks.
+- **Every UI language must have a listing locale.** Adding a language fails
   `npm test` until the listing is translated too, rather than quietly leaving a
   store page in English.
 

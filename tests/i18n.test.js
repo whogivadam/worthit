@@ -54,19 +54,32 @@ test('no string is left untranslated by accident', () => {
   // Product names, symbols and strings that are pure interpolation are
   // legitimately identical across languages -- 'rates.rateLine' is
   // '1 {from} = {rate} {to} (...)' and has no prose in it at all. A whole
-  // English sentence sitting in the Swedish table is a different matter, so
-  // only words that actually contain letters count towards the threshold.
+  // English sentence sitting in another table is a different matter, so only
+  // words that actually contain letters count towards the threshold.
   const en = i18n.MESSAGES.en;
-  const sv = i18n.MESSAGES.sv;
-  const sameButWordy = Object.keys(en).filter((key) => {
-    if (en[key] !== sv[key]) return false;
-    const words = en[key]
-      .replace(PLACEHOLDER, ' ')
-      .split(/\s+/)
-      .filter((word) => /\p{Letter}/u.test(word));
-    return words.length >= 3;
+  i18n.LANGUAGES.filter((language) => language !== 'en').forEach((language) => {
+    const table = i18n.MESSAGES[language];
+    const sameButWordy = Object.keys(en).filter((key) => {
+      if (en[key] !== table[key]) return false;
+      const words = en[key]
+        .replace(PLACEHOLDER, ' ')
+        .split(/\s+/)
+        .filter((word) => /\p{Letter}/u.test(word));
+      return words.length >= 3;
+    });
+    assert.deepEqual(sameButWordy, [], `these read as English in the ${language} table`);
   });
-  assert.deepEqual(sameButWordy, [], 'these read as English in the Swedish table');
+});
+
+test('the Chinese and Japanese tables are written in their own scripts', () => {
+  // Machine translation can hand back the wrong script, and the two Chinese
+  // tables are easy to swap by hand. A few characters that exist only in one
+  // form are enough to tell them apart.
+  const all = (language) => Object.values(i18n.MESSAGES[language]).join('');
+  assert.match(all('ja'), /[\u3040-\u30ff]/, 'Japanese uses kana');
+  assert.doesNotMatch(all('zh-CN'), /[設價貨幣歷錄網聯匯時鐘週儲]/, 'no Traditional in zh-CN');
+  assert.doesNotMatch(all('zh-TW'), /[设价货币历录网联汇时钟周储]/, 'no Simplified in zh-TW');
+  assert.doesNotMatch(all('zh-CN') + all('zh-TW'), /[\u3040-\u30ff]/, 'no kana in Chinese');
 });
 
 test('every key lib/calc.js can return has a string in every language', () => {
@@ -106,18 +119,46 @@ test('the stored setting wins, then the browser, then English', () => {
   assert.equal(i18n.resolve(null, 'sv_SE'), 'sv', 'underscore tags are real in the wild');
   assert.equal(i18n.resolve(null, 'SV-se'), 'sv');
   // a language this build does not carry falls through rather than sticking
-  assert.equal(i18n.resolve('de', 'sv-SE'), 'sv');
-  assert.equal(i18n.resolve(null, 'de-DE'), 'en');
+  assert.equal(i18n.resolve('fr', 'sv-SE'), 'sv');
+  assert.equal(i18n.resolve(null, 'fr-FR'), 'en');
   assert.equal(i18n.resolve(null, null), 'en');
   assert.equal(i18n.resolve(undefined, undefined), 'en');
   assert.equal(i18n.resolve('', ''), 'en');
   assert.equal(i18n.resolve(42, {}), 'en');
 });
 
+test('a region or script picks the right table for Portuguese and Chinese', () => {
+  assert.equal(i18n.resolve(null, 'de-AT'), 'de');
+  assert.equal(i18n.resolve(null, 'es-MX'), 'es');
+  assert.equal(i18n.resolve(null, 'ja-JP'), 'ja');
+  assert.equal(i18n.resolve(null, 'ja'), 'ja');
+  // one Portuguese table, Brazilian, and the European reader gets it too
+  assert.equal(i18n.resolve(null, 'pt-BR'), 'pt-BR');
+  assert.equal(i18n.resolve(null, 'pt_br'), 'pt-BR');
+  assert.equal(i18n.resolve(null, 'pt-PT'), 'pt-BR');
+  assert.equal(i18n.resolve(null, 'pt'), 'pt-BR');
+  // Chinese goes by script: Taiwan, Hong Kong, Macau and Hant read Traditional
+  assert.equal(i18n.resolve(null, 'zh-TW'), 'zh-TW');
+  assert.equal(i18n.resolve(null, 'zh_TW'), 'zh-TW');
+  assert.equal(i18n.resolve(null, 'zh-HK'), 'zh-TW');
+  assert.equal(i18n.resolve(null, 'zh-MO'), 'zh-TW');
+  assert.equal(i18n.resolve(null, 'zh-Hant'), 'zh-TW');
+  assert.equal(i18n.resolve(null, 'zh-Hant-HK'), 'zh-TW');
+  assert.equal(i18n.resolve(null, 'zh-CN'), 'zh-CN');
+  assert.equal(i18n.resolve(null, 'zh-SG'), 'zh-CN');
+  assert.equal(i18n.resolve(null, 'zh-Hans'), 'zh-CN');
+  assert.equal(i18n.resolve(null, 'zh-Hans-HK'), 'zh-CN', 'the script outranks the region');
+  assert.equal(i18n.resolve(null, 'zh'), 'zh-CN');
+  // a stored setting has to be the exact code; it was written by the picker
+  assert.equal(i18n.resolve('zh-TW', 'en-US'), 'zh-TW');
+  assert.equal(i18n.resolve('zh_TW', 'en-US'), 'en');
+  assert.equal(i18n.resolve('pt', 'en-US'), 'en');
+});
+
 test('setLanguage refuses anything it cannot render', () => {
   assert.equal(i18n.setLanguage('sv'), 'sv');
   assert.equal(i18n.language(), 'sv');
-  assert.equal(i18n.setLanguage('de'), 'en', 'an unsupported language falls back');
+  assert.equal(i18n.setLanguage('fr'), 'en', 'an unsupported language falls back');
   assert.equal(i18n.setLanguage(null), 'en');
   assert.equal(i18n.setLanguage('__proto__'), 'en', 'not an inherited property');
   assert.equal(i18n.setLanguage('constructor'), 'en');
@@ -186,6 +227,13 @@ test('the units differ between languages, in both the long and badge forms', () 
   i18n.setLanguage('sv');
   assert.equal(i18n.formatHoursMinutes(3.75), '3 tim 45 min');
   assert.equal(i18n.formatBadge(3.75, 40), '3t45m');
+  i18n.setLanguage('de');
+  assert.equal(i18n.formatHoursMinutes(3.75), '3 Std. 45 Min.');
+  i18n.setLanguage('ja');
+  assert.equal(i18n.formatHoursMinutes(3.75), '3時間45分');
+  i18n.setLanguage('zh-TW');
+  assert.equal(i18n.formatHoursMinutes(3.75), '3小時45分鐘');
+  assert.equal(i18n.formatBadge(3.75, 40), '3h45m', 'the badge keeps the compact Latin form');
   // a price that cannot be converted is a symbol, the same either way
   assert.equal(i18n.formatBadge(NaN, 40), '?');
 });
@@ -193,7 +241,20 @@ test('the units differ between languages, in both the long and badge forms', () 
 test('language names are written in their own language', () => {
   assert.equal(i18n.nameOf('en'), 'English');
   assert.equal(i18n.nameOf('sv'), 'Svenska');
+  assert.equal(i18n.nameOf('de'), 'Deutsch');
+  assert.equal(i18n.nameOf('zh-TW'), '繁體中文');
   assert.equal(i18n.nameOf('zz'), 'zz');
+  i18n.LANGUAGES.forEach((code) => {
+    assert.notEqual(i18n.nameOf(code), code, `${code} has no name in NAMES`);
+  });
+});
+
+test('every language code is a tag the browser and Intl accept', () => {
+  // The code goes into <html lang> and Intl.DisplayNames, which throws on an
+  // underscore. Intl canonicalises a valid tag to itself.
+  i18n.LANGUAGES.forEach((code) => {
+    assert.deepEqual(Intl.getCanonicalLocales(code), [code], code);
+  });
 });
 
 // --- _locales, for the strings Firefox renders -----------------------------
@@ -210,7 +271,9 @@ test('every __MSG_ placeholder in the manifest exists in every locale', () => {
     .readdirSync(path.join(root, '_locales'), { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name);
-  assert.deepEqual(locales.sort(), [...i18n.LANGUAGES].sort(), '_locales must match LANGUAGES');
+  // Browsers spell a region with an underscore there: 'zh-TW' lives in _locales/zh_TW/.
+  const expected = i18n.LANGUAGES.map((code) => code.replace('-', '_'));
+  assert.deepEqual(locales.sort(), expected.sort(), '_locales must match LANGUAGES');
 
   locales.forEach((locale) => {
     const messages = JSON.parse(read(path.join('_locales', locale, 'messages.json')));
@@ -218,6 +281,10 @@ test('every __MSG_ placeholder in the manifest exists in every locale', () => {
       assert.ok(messages[name], `_locales/${locale} is missing ${name}`);
       assert.ok(messages[name].message, `_locales/${locale}/${name} has no message`);
     });
+    // Chrome uses this as the store's short description and rejects the
+    // package if it runs over 132 characters.
+    const description = messages.extensionDescription.message;
+    assert.ok(description.length <= 132, `_locales/${locale} description is ${description.length}`);
   });
 });
 
@@ -349,13 +416,34 @@ test('no English is left on screen when the popup is Swedish', async () => {
   );
 });
 
+test('every language comes up with no English left on screen', async () => {
+  // The Swedish test above, for every table: the popup has to be readable in
+  // the language it says it is in, down to the lang attribute that picks the
+  // Han glyph forms.
+  const english = ['SETTINGS', 'of your life', 'CLEAR HISTORY', 'THIS SITE', 'Nothing checked yet.'];
+  for (const language of i18n.LANGUAGES.filter((code) => code !== 'en')) {
+    const { document } = await openPopup(language);
+    assert.equal(document.documentElement.lang, language);
+    assert.equal(
+      document.getElementById('open-settings').textContent,
+      i18n.MESSAGES[language]['nav.settings']
+    );
+    english.forEach((phrase) => {
+      assert.ok(!document.body.textContent.includes(phrase), `${language}: ${phrase} on screen`);
+    });
+  }
+});
+
 test('with nothing stored, the browser language decides', async () => {
   const swedish = await openPopup(undefined, 'sv-SE');
   assert.equal(swedish.document.documentElement.lang, 'sv');
 
-  const german = await openPopup(undefined, 'de-DE');
-  assert.equal(german.document.documentElement.lang, 'en', 'an unsupported language gets English');
-  assert.equal(german.document.getElementById('open-settings').textContent, 'SETTINGS');
+  const taiwanese = await openPopup(undefined, 'zh-HK');
+  assert.equal(taiwanese.document.documentElement.lang, 'zh-TW');
+
+  const french = await openPopup(undefined, 'fr-FR');
+  assert.equal(french.document.documentElement.lang, 'en', 'an unsupported language gets English');
+  assert.equal(french.document.getElementById('open-settings').textContent, 'SETTINGS');
 });
 
 test('the popup footer shows the running version, in both languages', async () => {
@@ -396,7 +484,16 @@ test('the language picker lists every language in its own language', async () =>
   );
   assert.deepEqual(
     options.map((option) => option.textContent),
-    ['English', 'Svenska']
+    [
+      'English',
+      'Svenska',
+      'Deutsch',
+      'Español',
+      'Português (Brasil)',
+      '日本語',
+      '简体中文',
+      '繁體中文',
+    ]
   );
   assert.equal(document.getElementById('language').value, 'en');
 });

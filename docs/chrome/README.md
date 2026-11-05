@@ -151,10 +151,29 @@ v0.1.0, starting with a full human review — which is worth remembering if a Ch
 back.
 
 **Do not paste that file's description into Chrome verbatim.** Its *PRIVACY: NOTHING IS COLLECTED*
-paragraph says browser sync would upload to "a Mozilla account", in both locales. That is right for
-AMO and wrong for Chrome, and it reached the Chrome listing once before it was caught. Drop the
-vendor from the sentence, or name Google, and leave `amo-metadata.json` itself alone — it is AMO
-listing copy, where naming Mozilla is correct.
+paragraph says browser sync would upload to "a Mozilla account", in every locale. That is right for
+AMO and wrong for Chrome, and it reached the Chrome listing once before it was caught. Leave
+`amo-metadata.json` itself alone — it is AMO listing copy, where naming Mozilla is correct — and
+paste the output of `npm run chrome:listing` instead, which swaps that one phrase for "a browser
+account" and refuses to print anything that still names Mozilla.
+
+**One listing per UI language.** Under **Store listing**, add each language the extension ships
+and paste its description:
+
+```sh
+npm run chrome:listing -- en      # English
+npm run chrome:listing -- sv      # Svenska
+npm run chrome:listing -- de      # Deutsch
+npm run chrome:listing -- es      # Español
+npm run chrome:listing -- pt-BR   # Português (Brasil)
+npm run chrome:listing -- ja      # 日本語
+npm run chrome:listing -- zh-CN   # 简体中文
+npm run chrome:listing -- zh-TW   # 繁體中文
+```
+
+The short description under the name is not pasted: Chrome reads it from
+`_locales/*/messages.json` (`extensionDescription`), which is in the zip, so it arrives with the
+release. Chrome caps it at 132 characters.
 
 There is one genuine alternative, if review ever goes badly: `optional_host_permissions` plus
 `scripting.registerContentScripts` at runtime, so the reader grants broad access after install

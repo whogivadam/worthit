@@ -42,12 +42,14 @@ On first run the popup asks for your income once, and never asks again:
 - a monthly after-tax salary, or an hourly after-tax rate
 - hours worked per week (40 by default)
 - your home currency, pre-filled from your browser locale
-- the interface language, English or Swedish, pre-filled from your browser language
+- the interface language, pre-filled from your browser language: English, Swedish, German, Spanish,
+  Brazilian Portuguese, Japanese, or Chinese (Simplified or Traditional)
 
 The hourly rate is `monthly / (hours_per_week * 52 / 12)`.
 
 Changing the language takes effect at once, in the popup and in the badges already on the page, and
-is saved as you pick it rather than on **SAVE**.
+is saved as you pick it rather than on **SAVE**. The German, Spanish, Portuguese, Japanese and
+Chinese translations are machine translations for now; corrections from native speakers are welcome.
 
 Prices in other currencies are converted for you, with nothing to switch. Worth It? works out each
 price's currency from its symbol or code, the page's own price metadata, its language and its

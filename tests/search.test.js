@@ -47,6 +47,18 @@ test('the same holds in Swedish, off the Swedish names', () => {
   });
 });
 
+test('every UI language searches off its own names', () => {
+  // The language codes go straight into Intl.DisplayNames, so a code it
+  // rejected ('zh_TW') would leave search matching codes and symbols only.
+  assert.equal(first('Deutschland', 'de'), 'EUR');
+  assert.equal(first('Japón', 'es'), 'JPY');
+  assert.equal(first('Brasil', 'pt-BR'), 'BRL');
+  assert.equal(first('日本', 'ja'), 'JPY');
+  assert.equal(first('人民币', 'zh-CN'), 'CNY');
+  assert.equal(first('台灣', 'zh-TW'), 'TWD');
+  assert.equal(first('新台幣', 'zh-TW'), 'TWD');
+});
+
 test('short and long country names both work', () => {
   // Intl gives 'UK' for style short and 'United Kingdom' for long; both index.
   assert.equal(first('uk'), 'GBP');
