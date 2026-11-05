@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.0](https://github.com/whogivadam/worthit/compare/v0.5.2...v0.6.0) (2026-11-05)
+
+
+### Features
+
+* **popup:** add seven UI languages and localised decimals ([#95](https://github.com/whogivadam/worthit/issues/95)) ([3df031a](https://github.com/whogivadam/worthit/commit/3df031a288a2eb1eff64e2c480dc9ccc19f289d4))
+
+
+### Documentation
+
+* **repo:** say in the README that foreign prices convert automatically ([#93](https://github.com/whogivadam/worthit/issues/93)) ([90dbd0d](https://github.com/whogivadam/worthit/commit/90dbd0dd3da1a651244686711c6ee3cc0b09b523)), closes [#92](https://github.com/whogivadam/worthit/issues/92)
+
 ## [0.5.2](https://github.com/whogivadam/worthit/compare/v0.5.1...v0.5.2) (2026-11-04)
 
 
