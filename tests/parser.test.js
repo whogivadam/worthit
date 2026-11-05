@@ -109,6 +109,14 @@ const CASES = [
   ['250 грн', NONE, 250, 'UAH'],
   ['1000 円', NONE, 1000, 'JPY'],
   ['1000 元', NONE, 1000, 'CNY'],
+  // '元' is the yuan and, in Taiwan, the dollar: the page decides, and with
+  // nothing to go on it stays the yuan
+  ['1,299元', { pageLocale: 'zh-TW' }, 1299, 'TWD'],
+  ['1,299元', { tld: 'x.tw' }, 1299, 'TWD'],
+  ['1,299元', { pageLocale: 'zh-CN' }, 1299, 'CNY'],
+  ['1299元', { homeCurrency: 'TWD' }, 1299, 'TWD'],
+  ['新台幣1,299', NONE, 1299, 'TWD'],
+  ['1,299 台幣', NONE, 1299, 'TWD'],
   ['¥1000 CNY', NONE, 1000, 'CNY'],
   ['50000 원', NONE, 50000, 'KRW'],
   ['₩50000', NONE, 50000, 'KRW'],
