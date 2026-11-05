@@ -119,6 +119,7 @@ none of them is a typo:
 | --- | --- | --- | --- |
 | English | `en` | `en` | `en-US` |
 | Swedish | `sv` | `sv` | `sv-SE` |
+| French | `fr` | `fr` | `fr` |
 | German | `de` | `de` | `de` |
 | Spanish | `es` | `es` | `es-ES` |
 | Portuguese (Brazil) | `pt-BR` | `pt_BR` | `pt-BR` |
@@ -132,9 +133,10 @@ in `_locales/`, and the UI code has to be a BCP 47 tag because it goes into
 another. `amo-metadata.json` is strict JSON with nowhere to write that down, so
 the map lives in `scripts/chrome-listing.js` and the tests read it from there.
 
-The German, Spanish, Portuguese, Japanese and Chinese listings are machine
+The French, German, Spanish, Portuguese, Japanese and Chinese listings are machine
 translations, like the UI strings they describe, pending review by native
-speakers.
+speakers. Where a listing quotes a badge, it writes the number the way that
+language's badge does: `2.5d` in English, `2,5d` in Swedish.
 
 Only prose is translated. `name` stays `en-US` only, because *Worth It?* is the
 product name and is left untranslated in `_locales/sv/messages.json` too, and

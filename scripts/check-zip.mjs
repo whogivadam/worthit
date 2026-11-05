@@ -28,6 +28,7 @@ const REQUIRED = [
   'lib/rates-snapshot.json',
   '_locales/en/messages.json',
   '_locales/sv/messages.json',
+  '_locales/fr/messages.json',
   '_locales/de/messages.json',
   '_locales/es/messages.json',
   '_locales/pt_BR/messages.json',

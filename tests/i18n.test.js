@@ -119,8 +119,8 @@ test('the stored setting wins, then the browser, then English', () => {
   assert.equal(i18n.resolve(null, 'sv_SE'), 'sv', 'underscore tags are real in the wild');
   assert.equal(i18n.resolve(null, 'SV-se'), 'sv');
   // a language this build does not carry falls through rather than sticking
-  assert.equal(i18n.resolve('fr', 'sv-SE'), 'sv');
-  assert.equal(i18n.resolve(null, 'fr-FR'), 'en');
+  assert.equal(i18n.resolve('it', 'sv-SE'), 'sv');
+  assert.equal(i18n.resolve(null, 'it-IT'), 'en');
   assert.equal(i18n.resolve(null, null), 'en');
   assert.equal(i18n.resolve(undefined, undefined), 'en');
   assert.equal(i18n.resolve('', ''), 'en');
@@ -128,6 +128,8 @@ test('the stored setting wins, then the browser, then English', () => {
 });
 
 test('a region or script picks the right table for Portuguese and Chinese', () => {
+  assert.equal(i18n.resolve(null, 'fr-CA'), 'fr');
+  assert.equal(i18n.resolve(null, 'fr-BE'), 'fr');
   assert.equal(i18n.resolve(null, 'de-AT'), 'de');
   assert.equal(i18n.resolve(null, 'es-MX'), 'es');
   assert.equal(i18n.resolve(null, 'ja-JP'), 'ja');
@@ -158,7 +160,7 @@ test('a region or script picks the right table for Portuguese and Chinese', () =
 test('setLanguage refuses anything it cannot render', () => {
   assert.equal(i18n.setLanguage('sv'), 'sv');
   assert.equal(i18n.language(), 'sv');
-  assert.equal(i18n.setLanguage('fr'), 'en', 'an unsupported language falls back');
+  assert.equal(i18n.setLanguage('it'), 'en', 'an unsupported language falls back');
   assert.equal(i18n.setLanguage(null), 'en');
   assert.equal(i18n.setLanguage('__proto__'), 'en', 'not an inherited property');
   assert.equal(i18n.setLanguage('constructor'), 'en');
@@ -175,6 +177,29 @@ test('placeholders are filled, and an unused one is left alone', () => {
   assert.equal(i18n.t('framing.daysOfLife', {}), '{days} days of your life');
   assert.equal(i18n.t('framing.daysOfLife'), '{days} days of your life');
   assert.equal(i18n.t('framing.daysOfLife', { days: 0 }), '0 days of your life');
+});
+
+test('numbers take the decimal separator of the language', () => {
+  const comma = ['sv', 'de', 'es', 'pt-BR', 'fr'];
+  i18n.LANGUAGES.forEach((language) => {
+    const expected = comma.includes(language) ? ',' : '.';
+    assert.equal(i18n.MESSAGES[language]['format.decimal'], expected, language);
+  });
+
+  i18n.setLanguage('de');
+  assert.equal(i18n.t('framing.daysOfLife', { days: 1.2 }), '1,2 Tage deines Lebens');
+  assert.equal(i18n.render(calc.framing(48, 40)), '1,2 Arbeitswochen');
+  assert.equal(i18n.formatBadge(20, 40), '2,5T');
+  assert.equal(i18n.formatNumber('9.87850'), '9,87850', 'a toPrecision() string too');
+  assert.equal(i18n.formatNumber(1299), '1299', 'and no thousands separator appears');
+  // whole numbers and strings that are not numbers pass through untouched
+  assert.equal(i18n.t('result.overflowDays', { days: 3 }), '+3 Tage');
+  assert.equal(i18n.t('rates.noRateFor', { code: 'U.S.' }).includes('U.S.'), true);
+
+  i18n.setLanguage('ja');
+  assert.equal(i18n.formatBadge(20, 40), '2.5日');
+  i18n.setLanguage('en');
+  assert.equal(i18n.formatBadge(20, 40), '2.5d');
 });
 
 test('an unknown key degrades to English and then to the key itself', () => {
@@ -216,7 +241,7 @@ test('a worked example renders end to end in both languages', () => {
 
   i18n.setLanguage('sv');
   assert.equal(i18n.formatHoursMinutes(time.totalHours), '9 tim');
-  assert.equal(i18n.formatBadge(time.totalHours, 40), '1.1d');
+  assert.equal(i18n.formatBadge(time.totalHours, 40), '1,1d', 'Swedish writes a decimal comma');
   assert.equal(i18n.render(calc.framing(time.totalHours, 40)), 'Hela din tisdag');
 });
 
@@ -242,6 +267,7 @@ test('language names are written in their own language', () => {
   assert.equal(i18n.nameOf('en'), 'English');
   assert.equal(i18n.nameOf('sv'), 'Svenska');
   assert.equal(i18n.nameOf('de'), 'Deutsch');
+  assert.equal(i18n.nameOf('fr'), 'Français');
   assert.equal(i18n.nameOf('zh-TW'), '繁體中文');
   assert.equal(i18n.nameOf('zz'), 'zz');
   i18n.LANGUAGES.forEach((code) => {
@@ -441,9 +467,12 @@ test('with nothing stored, the browser language decides', async () => {
   const taiwanese = await openPopup(undefined, 'zh-HK');
   assert.equal(taiwanese.document.documentElement.lang, 'zh-TW');
 
-  const french = await openPopup(undefined, 'fr-FR');
-  assert.equal(french.document.documentElement.lang, 'en', 'an unsupported language gets English');
-  assert.equal(french.document.getElementById('open-settings').textContent, 'SETTINGS');
+  const french = await openPopup(undefined, 'fr-CA');
+  assert.equal(french.document.documentElement.lang, 'fr');
+
+  const italian = await openPopup(undefined, 'it-IT');
+  assert.equal(italian.document.documentElement.lang, 'en', 'an unsupported language gets English');
+  assert.equal(italian.document.getElementById('open-settings').textContent, 'SETTINGS');
 });
 
 test('the popup footer shows the running version, in both languages', async () => {
@@ -487,6 +516,7 @@ test('the language picker lists every language in its own language', async () =>
     [
       'English',
       'Svenska',
+      'Français',
       'Deutsch',
       'Español',
       'Português (Brasil)',

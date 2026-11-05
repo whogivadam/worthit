@@ -230,7 +230,7 @@ span[data-worthit-badge] {
     if (rate === null) return I18n.t('rates.unavailable', { source: label, date: when });
     return I18n.t('rates.rateLine', {
       from: sourceCode,
-      rate: rate.toPrecision(6),
+      rate: I18n.formatNumber(rate.toPrecision(6)),
       to: homeCode,
       date: when,
       source: label,
@@ -292,7 +292,7 @@ span[data-worthit-badge] {
     const converted =
       price.currency === home
         ? null
-        : `${amountHome.toFixed(2)} ${home}`;
+        : `${I18n.formatNumber(amountHome.toFixed(2))} ${home}`;
 
     const workTime = I18n.t('badge.workTime', { time: I18n.formatHoursMinutes(totalHours) });
     const tooltip = [

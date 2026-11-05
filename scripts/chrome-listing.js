@@ -21,6 +21,7 @@ const path = require('node:path');
 const AMO_LOCALE = {
   en: 'en-US',
   sv: 'sv-SE',
+  fr: 'fr',
   de: 'de',
   es: 'es-ES',
   'pt-BR': 'pt-BR',
@@ -33,6 +34,7 @@ const AMO_LOCALE = {
 const VENDOR_NEUTRAL = {
   'en-US': ['uploaded to a Mozilla account', 'uploaded to a browser account'],
   'sv-SE': ['laddas upp till ett Mozilla-konto', 'laddas upp till ett webbläsarkonto'],
+  fr: ['envoyé vers un compte Mozilla', 'envoyé vers un compte de navigateur'],
   de: ['in ein Mozilla-Konto hochgeladen', 'in ein Browserkonto hochgeladen'],
   'es-ES': ['se sube a una cuenta de Mozilla', 'se sube a una cuenta del navegador'],
   'pt-BR': ['enviado para uma conta Mozilla', 'enviado para uma conta do navegador'],

@@ -163,6 +163,7 @@ and paste its description:
 ```sh
 npm run chrome:listing -- en      # English
 npm run chrome:listing -- sv      # Svenska
+npm run chrome:listing -- fr      # Français
 npm run chrome:listing -- de      # Deutsch
 npm run chrome:listing -- es      # Español
 npm run chrome:listing -- pt-BR   # Português (Brasil)
