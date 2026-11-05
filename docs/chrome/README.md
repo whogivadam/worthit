@@ -155,7 +155,9 @@ paragraph says browser sync would upload to "a Mozilla account", in every locale
 AMO and wrong for Chrome, and it reached the Chrome listing once before it was caught. Leave
 `amo-metadata.json` itself alone — it is AMO listing copy, where naming Mozilla is correct — and
 paste the output of `npm run chrome:listing` instead, which swaps that one phrase for "a browser
-account" and refuses to print anything that still names Mozilla.
+account" and refuses to print anything that still names Mozilla. It also puts the repository URL on
+its own line after the MIT paragraph under *OPEN SOURCE*: AMO shows the homepage as a link beside
+the listing, and Chrome's listing has no such field.
 
 **One listing per UI language.** Under **Store listing**, add each language the extension ships
 and paste its description:

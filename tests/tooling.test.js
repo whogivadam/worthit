@@ -503,13 +503,25 @@ test('the Chrome listing text exists in every language and never names Mozilla',
   const { AMO_LOCALE, VENDOR_NEUTRAL, chromeDescription } = require('../scripts/chrome-listing.js');
   const i18n = require('../lib/i18n.js');
   const metadata = JSON.parse(read('amo-metadata.json'));
+  const repo = metadata.homepage['en-US'];
+  assert.equal(repo, 'https://github.com/whogivadam/worthit');
   i18n.LANGUAGES.forEach((language) => {
     const locale = AMO_LOCALE[language];
     const text = chromeDescription(language, metadata);
     assert.doesNotMatch(text, /mozilla/i, `${language}: the Chrome text names Mozilla`);
-    // and nothing else changed: the swap undone gives back the AMO text exactly
+
+    // Chrome has no homepage link beside the listing, so the repository URL
+    // follows the MIT paragraph under OPEN SOURCE, once, on a line of its own.
+    const paragraphs = text.split('\n\n');
+    const at = paragraphs.indexOf(repo);
+    assert.ok(at > 0, `${language}: the repository link is missing`);
+    assert.match(paragraphs[at - 1], /\bMIT\b/, `${language}: the link follows the MIT paragraph`);
+    assert.equal(text.split(repo).length, 2, `${language}: the link appears once`);
+
+    // and nothing else changed: both edits undone give back the AMO text exactly
     const [from, to] = VENDOR_NEUTRAL[locale];
-    assert.equal(text.replace(to, from), metadata.description[locale], `${language}: only the vendor`);
+    const undone = text.replace(`\n\n${repo}`, '').replace(to, from);
+    assert.equal(undone, metadata.description[locale], `${language}: only the vendor and the link`);
   });
 });
 
