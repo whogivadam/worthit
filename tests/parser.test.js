@@ -117,6 +117,13 @@ const CASES = [
   ['1299元', { homeCurrency: 'TWD' }, 1299, 'TWD'],
   ['新台幣1,299', NONE, 1299, 'TWD'],
   ['1,299 台幣', NONE, 1299, 'TWD'],
+  // Chinese, Japanese and Korean put no space after the currency, so a word
+  // that follows straight on must not hide the price
+  ['5,000円以上で送料無料', { pageLocale: 'ja-JP' }, 5000, 'JPY'],
+  ['满99元包邮', { pageLocale: 'zh-CN' }, 99, 'CNY'],
+  ['滿990元免運', { pageLocale: 'zh-TW' }, 990, 'TWD'],
+  ['售價新台幣1,299', NONE, 1299, 'TWD'],
+  ['5000원부터', NONE, 5000, 'KRW'],
   ['¥1000 CNY', NONE, 1000, 'CNY'],
   ['50000 원', NONE, 50000, 'KRW'],
   ['₩50000', NONE, 50000, 'KRW'],
@@ -209,6 +216,11 @@ const CASES = [
 
   // --- rejects --------------------------------------------------------------
   ['RTX 4090', NONE, null],
+  // without the letter guard, these CJK words must still not read as prices
+  ['3元素', NONE, null],
+  ['第2元首', NONE, null],
+  ['2026年1月15日', NONE, null],
+  ['40時間再生', NONE, null],
   ['RTX 4090 Ti', NONE, null],
   ['Audi R8', NONE, null],
   ['iPhone 15 Pro', NONE, null],
