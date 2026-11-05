@@ -259,3 +259,32 @@ test('the blank "Auto-detect" row is still there and still blank', async () => {
   assert.equal(first.code, '');
   assert.equal(first.label, 'Auto-detect');
 });
+
+test('first run guesses the home currency from the browser languages', () => {
+  const guess = (...tags) => Currencies.currencyForLanguages(tags);
+  // a region decides
+  assert.equal(guess('de-DE'), 'EUR');
+  assert.equal(guess('de-CH'), 'CHF');
+  assert.equal(guess('en-GB'), 'GBP');
+  assert.equal(guess('zh-Hant-TW'), 'TWD');
+  // a bare language, as Firefox and Chrome often report it, still guesses
+  assert.equal(guess('de'), 'EUR');
+  assert.equal(guess('fr'), 'EUR');
+  assert.equal(guess('es'), 'EUR');
+  assert.equal(guess('sv'), 'SEK');
+  assert.equal(guess('pt'), 'BRL');
+  assert.equal(guess('ja'), 'JPY');
+  assert.equal(guess('zh'), 'CNY');
+  assert.equal(guess('zh-Hant'), 'TWD');
+  // the most preferred language wins, and its own region further down beats a guess
+  assert.equal(guess('de', 'en-US'), 'EUR', 'not the USD of a second choice');
+  assert.equal(guess('de', 'de-CH', 'en-US'), 'CHF');
+  assert.equal(guess('en', 'en-US'), 'USD');
+  // nothing to go on
+  assert.equal(guess('en'), null, 'English is too widespread to guess');
+  assert.equal(Currencies.currencyForLanguages([]), null);
+  assert.equal(Currencies.currencyForLanguages(undefined), null);
+  assert.equal(Currencies.currencyForLanguages('de'), 'EUR', 'a single tag works too');
+  // and the page-reading lookup is untouched: lang="de" on a page means no currency
+  assert.equal(Currencies.currencyForLocale('de'), null);
+});

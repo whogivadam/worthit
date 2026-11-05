@@ -386,6 +386,7 @@ async function openPopup(language, browserLanguage, options) {
   const { window } = dom;
   const saved = [];
   let stored = storedWith(language);
+  if (config.settings) Object.assign(stored.settings, config.settings);
   Object.defineProperty(window.navigator, 'language', {
     value: browserLanguage || 'en-US',
     configurable: true,
@@ -501,6 +502,26 @@ test('a browser that will not name the version leaves the line empty', async () 
   const { document } = await openPopup('en', 'en-US', { noManifest: true });
   assert.equal(document.getElementById('version').textContent, '');
   assert.equal(document.getElementById('rate-status').textContent.length > 0, true, 'and the rest of the footer still renders');
+});
+
+test('saved decimals come back in Settings the way the language writes them', async () => {
+  const settings = { incomeMode: 'hourly', hourly: 32.5, hoursPerWeek: 37.5 };
+  const german = await openPopup('de', 'de-DE', { settings });
+  german.document.getElementById('open-settings').click();
+  assert.equal(german.document.getElementById('hourly').value, '32,5');
+  assert.equal(german.document.getElementById('hours-per-week').value, '37,5');
+  assert.equal(german.document.getElementById('monthly').value, '25000', 'no separator added');
+
+  const english = await openPopup('en', 'en-US', { settings });
+  english.document.getElementById('open-settings').click();
+  assert.equal(english.document.getElementById('hourly').value, '32.5');
+
+  // and what is shown saves back as the same number
+  german.document.getElementById('save-settings').click();
+  await new Promise((resolve) => german.window.setTimeout(resolve, 0));
+  const saved = german.saved.filter((u) => u.settings).pop().settings;
+  assert.equal(saved.hourly, 32.5);
+  assert.equal(saved.hoursPerWeek, 37.5);
 });
 
 test('the language picker lists every language in its own language', async () => {
