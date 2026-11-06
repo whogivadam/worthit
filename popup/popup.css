@@ -7,6 +7,7 @@
   --accent: #ff2d2d;
   --muted: #666;
   --rule: 2px solid #000;
+  --popup-width: 440px;
   --sans: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif;
   --mono: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
 }
@@ -22,8 +23,17 @@ body {
   padding: 0;
 }
 
+/* The width is a token because the height budget is read off it: a store popup
+   is clamped to 800x600 CSS px with no sizing API, so width is the only lever
+   over how the text wraps -- and how it wraps is what makes the height
+   language-dependent. scripts/measure-popup.mjs parses this value and checks
+   every view against the 600px cap in all nine languages. #107
+   max-width keeps a vertical scrollbar from costing a horizontal one: where
+   scrollbars take space, the bar eats ~15px of the popup and the content lays
+   itself out in what is left rather than overflowing sideways. */
 body {
-  width: 360px;
+  width: var(--popup-width);
+  max-width: 100%;
   background: var(--paper);
   color: var(--ink);
   font-family: var(--sans);
@@ -75,7 +85,7 @@ p {
 }
 
 .lead {
-  padding: 12px;
+  padding: 10px 12px;
   margin: 0;
   border-bottom: var(--rule);
   font-size: 13px;
@@ -83,16 +93,23 @@ p {
 
 /* --- inputs --------------------------------------------------------------- */
 
+/* line-height is set rather than left at `normal`, here and on buttons, because
+   `normal` is the font's own: a Japanese or Chinese fallback face asks for a
+   taller line box than Helvetica at the same font-size, which made a control --
+   and so the whole view -- taller in CJK than in Latin. 1.2 is what Latin was
+   already getting, so stating it costs Latin nothing and makes every language
+   measure the same. #107 */
 input[type="text"],
 select {
   width: 100%;
-  padding: 8px;
+  padding: 7px 8px;
   border: var(--rule);
   background: var(--paper);
   color: var(--ink);
   font-family: var(--sans);
   font-size: 14px;
   font-weight: 700;
+  line-height: 1.2;
   appearance: none;
 }
 
@@ -207,7 +224,8 @@ button:focus {
 }
 
 /* Inline in the price row the field has to stay narrow. The list it drops does
-   not, so it anchors to the right edge and takes the width it needs. */
+   not, so it anchors to the right edge and runs back to just past the currency
+   symbol, whatever the popup's width is. */
 .price-row .combo {
   flex: 0 0 auto;
   border-left: var(--rule);
@@ -224,12 +242,12 @@ button:focus {
 .price-row .combo-list {
   left: auto;
   right: 0;
-  width: 304px;
+  width: calc(var(--popup-width) - 56px);
 }
 
 fieldset {
-  margin: 12px;
-  padding: 10px;
+  margin: 10px 12px;
+  padding: 8px 10px;
   border: var(--rule);
 }
 
@@ -241,7 +259,7 @@ legend {
 }
 
 fieldset input[type="text"] {
-  margin: 4px 0 10px;
+  margin: 4px 0 8px;
 }
 
 fieldset input[type="text"]:last-child {
@@ -252,7 +270,7 @@ fieldset input[type="text"]:last-child {
 .check,
 .radio {
   display: block;
-  margin: 12px;
+  margin: 10px 12px;
 }
 
 .field > span {
@@ -289,6 +307,7 @@ button {
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.1em;
+  line-height: 1.2; /* see the note on inputs: keeps CJK and Latin the same height */
   padding: 8px 10px;
   cursor: pointer;
 }
@@ -301,7 +320,23 @@ button:hover {
 button.wide {
   display: block;
   width: calc(100% - 24px);
-  margin: 12px;
+  margin: 10px 12px;
+}
+
+/* Two buttons on one row rather than stacked: the popup has width to spare and
+   no height to spare, and a row costs ~45px less than a stack. One visible
+   button fills the row on its own, which is what first run gets -- Back is
+   hidden there. */
+.actions {
+  display: flex;
+  gap: 10px;
+  margin: 10px 12px;
+}
+
+.actions .wide {
+  width: auto;
+  margin: 0;
+  flex: 1 1 0;
 }
 
 button.ghost {
