@@ -258,9 +258,39 @@ test('a split price in visible markup still gets its badge', async () => {
   assert.deepEqual(page.labels(), ['7h30m']);
 });
 
-test('amounts outside 1 to 10,000,000 home currency are ignored', async () => {
+// 50 000 000 kr at 173.08 kr/h is 288 889 h, past 100 years of 40-hour weeks.
+test('amounts under 1 home unit or past 100 working years are ignored', async () => {
   const page = await mount('<p>0,50 kr</p><p>50 000 000 kr</p><p>1 299 kr</p>');
   assert.deepEqual(page.labels(), ['7h30m']);
+});
+
+// booli.se: 23 450 000 kr is 135 490 h, 16 936 workdays. A fixed 10 000 000
+// ceiling used to hide it, and every other home on the site.
+test('a home priced over ten million still gets its badge', async () => {
+  const page = await mount('<p>Utropspris</p><p>23 450 000 kr</p>');
+  assert.deepEqual(page.labels(), ['16936d']);
+});
+
+test('the ceiling is working time, not an amount in the home currency', async () => {
+  const yen = Object.assign({}, DEFAULT_STORED.settings, { homeCurrency: 'JPY', monthly: 400000 });
+  const page = await mount('<p>35 000 000 円</p>', { settings: yen });
+  assert.equal(page.labels().length, 1);
+});
+
+// booli.se's fact list: the fee is badged in its own text node, and the bare
+// year then climbed to the list, read the fee and its badge together as
+// '10 236 kr5.2d', and badged 'kr5.2' -- five kronor -- as '1m'.
+test('a bare number does not pick up a neighbour price, or a badge, as its own', async () => {
+  const page = await mount(
+    '<div class="facts">' +
+      '<div><span>Boarea</span><span>142 m²</span></div>' +
+      '<div><span>Avgift</span><span>10 236 kr/mån</span></div>' +
+      '<div><span>Byggår</span><span>1929</span></div>' +
+      '</div>',
+  );
+  await page.settle();
+  assert.deepEqual(page.labels(), ['7.4d']);
+  assert.equal(page.badges()[0].parentElement.tagName, 'SPAN');
 });
 
 test('an unconvertible currency gets an honest question mark', async () => {
