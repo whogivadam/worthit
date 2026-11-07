@@ -355,6 +355,53 @@ const CASES = [
   ['499:99', { pageLocale: 'sv-SE' }, 499.99, 'SEK'],
   ['499:99', { forcedCurrency: 'SEK' }, 499.99, 'SEK'],
   ['2 499:99', SE, 2499.99, 'SEK'],
+
+  // --- magnitudes (#109) ------------------------------------------------------
+  // Words, spaced or glued, beside a currency token.
+  ['1,8 miljoner kr', SE, 1800000, 'SEK'],
+  ['2 mdr kr', SE, 2000000000, 'SEK'],
+  ['1.8 million kr', SE, 1800000, 'SEK'],
+  ['5 million dollars', NONE, 5000000, 'USD'],
+  ['€2,5 Mio.', NONE, 2500000, 'EUR'],
+  ['1.500 Mio. €', NONE, 1500000000, 'EUR'],
+  ['₹1.5 crore', NONE, 15000000, 'INR'],
+  ['Rs 50 lakh', NONE, 5000000, 'INR'],
+  // Glued to the token: Swedish, and the French 'M€'.
+  ['1,8 Mkr', SE, 1800000, 'SEK'],
+  ['1,8 mkr', SE, 1800000, 'SEK'],
+  ['2 mnkr', SE, 2000000, 'SEK'],
+  ['3 mdkr', SE, 3000000000, 'SEK'],
+  ['5 tkr', SE, 5000, 'SEK'],
+  ['1,8 MSEK', SE, 1800000, 'SEK'],
+  ['5 M€', NONE, 5000000, 'EUR'],
+  ['5 k€', NONE, 5000, 'EUR'],
+  // Glued to the number. These used to be badged at face value: $1.80.
+  ['$1.8M', NONE, 1800000, 'USD'],
+  ['€1.8m', NONE, 1800000, 'EUR'],
+  ['$5B', NONE, 5000000000, 'USD'],
+  ['$300k', NONE, 300000, 'USD'],
+  ['$1.875M', NONE, 1875000, 'USD'],
+  // CJK, applied before zero-decimal rounding.
+  ['3万円', NONE, 30000, 'JPY'],
+  ['1.5万円', NONE, 15000, 'JPY'],
+  ['¥1億', NONE, 100000000, 'JPY'],
+  ['5만원', NONE, 50000, 'KRW'],
+  ['5万元', NONE, 50000, 'CNY'],
+  // No currency, no price: these are lengths, counts and anything else.
+  ['1.8 million', NONE, null],
+  ['5 m', NONE, null],
+  ['10 k', NONE, null],
+  ['142 m²', SE, null],
+  // 'mil' is a thousand in Portuguese and a million in English slang.
+  ['R$ 5 mil', NONE, null],
+  // Compound CJK amounts are not read, and their tail is no price of its own.
+  ['1億5000万円', NONE, null],
+  ['1億5000円', NONE, null],
+  // A letter after the number that is no magnitude changes nothing.
+  ['$5mo', NONE, 5, 'USD'],
+  // A token that exists whole is never split into magnitude + token.
+  ['5 TL', NONE, 5, 'TRY'],
+  ['5 kr', SE, 5, 'SEK'],
 ];
 
 test('every case parses to the expected amount and currency', () => {
@@ -399,6 +446,27 @@ test('a range yields both ends with the same currency', () => {
     parser.parsePrices('1 299-1 499 kr', SE).map((price) => price.amount),
     [1299, 1499],
   );
+});
+
+test('a magnitude after a range applies to both ends', () => {
+  assert.deepEqual(
+    parser.parsePrices('1,5–2 Mkr', SE).map((price) => [price.amount, price.currency]),
+    [[1500000, 'SEK'], [2000000, 'SEK']],
+  );
+  assert.deepEqual(
+    parser.parsePrices('$1-2M', NONE).map((price) => price.amount),
+    [1000000, 2000000],
+  );
+});
+
+test('magnitude words live in the currency table, not in the parser', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const source = fs.readFileSync(path.join(__dirname, '..', 'lib', 'parser.js'), 'utf8');
+  const code = source.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+  for (const word of ['miljoner', 'million', 'Mio', 'crore', 'lakh', 'mdr']) {
+    assert.ok(!code.includes(`'${word}'`), `parser.js hard-codes the magnitude '${word}'`);
+  }
 });
 
 test('several prices in one string are all found, in order', () => {
