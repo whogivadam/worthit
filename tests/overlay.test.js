@@ -258,10 +258,10 @@ test('a split price in visible markup still gets its badge', async () => {
   assert.deepEqual(page.labels(), ['7h30m']);
 });
 
-// 50 000 000 kr at 173.08 kr/h is 288 889 h, past 100 years of 40-hour weeks.
-test('amounts under 1 home unit or past 100 working years are ignored', async () => {
+// 50 000 000 kr at 173.08 kr/h is 288 889 h, 36 111 workdays.
+test('amounts under 1 home unit are ignored, and there is no ceiling', async () => {
   const page = await mount('<p>0,50 kr</p><p>50 000 000 kr</p><p>1 299 kr</p>');
-  assert.deepEqual(page.labels(), ['7h30m']);
+  assert.deepEqual(page.labels(), ['36111d', '7h30m']);
 });
 
 // booli.se: 23 450 000 kr is 135 490 h, 16 936 workdays. A fixed 10 000 000
@@ -271,7 +271,7 @@ test('a home priced over ten million still gets its badge', async () => {
   assert.deepEqual(page.labels(), ['16936d']);
 });
 
-test('the ceiling is working time, not an amount in the home currency', async () => {
+test('large amounts are badged in a high-denomination home currency too', async () => {
   const yen = Object.assign({}, DEFAULT_STORED.settings, { homeCurrency: 'JPY', monthly: 400000 });
   const page = await mount('<p>35 000 000 円</p>', { settings: yen });
   assert.equal(page.labels().length, 1);

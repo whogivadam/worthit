@@ -22,12 +22,10 @@
   const SCAN_INTERVAL_MS = 300;
 
   // Below one unit of the home currency is not a price anyone is deciding about.
+  // There is deliberately no ceiling: every reader has a different budget, and
+  // a fixed one hid every home on booli.se -- while meaning a flat in kronor, a
+  // car in yen and a phone in dong.
   const MIN_HOME_AMOUNT = 1;
-  // Nor is anything past a century of the reader's own work. The ceiling is in
-  // working time rather than in money because a fixed amount means nothing
-  // across currencies: 10 000 000 was a Stockholm flat in kronor, a car in yen
-  // and a phone in dong, and it hid every home on booli.se.
-  const MAX_WORK_YEARS = 100;
 
   // Editable fields, code listings, and anything already handled.
   const SKIP_SELECTOR = [
@@ -291,7 +289,6 @@ span[data-worthit-badge] {
     const rate = Calc.hourlyRate(state.settings);
     const totalHours = Calc.totalHoursFor(amountHome, rate);
     if (totalHours === null) return null;
-    if (totalHours > Number(state.settings.hoursPerWeek) * 52 * MAX_WORK_YEARS) return null;
 
     const converted =
       price.currency === home
