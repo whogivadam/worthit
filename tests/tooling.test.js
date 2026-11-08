@@ -51,6 +51,7 @@ test('package.json exposes every script the workflows and docs call', () => {
     'snapshot',
     'check-zip',
     'check-privacy',
+    'measure-popup',
     'publish:chrome',
     'chrome:zip',
     'prepare',
@@ -309,6 +310,31 @@ test('every element the popup script reaches for exists in its HTML', () => {
   for (const [, name] of script.matchAll(/\[name="([^"]+)"\]/g)) {
     assert.ok(names.has(name), `popup.js selects [name="${name}"], which popup.html does not define`);
   }
+});
+
+test('the popup has a width token, and the height budget can read it', () => {
+  // The stores clamp an action popup to 800x600 CSS px and scroll anything past
+  // it, with no sizing API to ask for more. Height is therefore a budget, and
+  // width is the only lever over it: how the strings wrap is what made the
+  // height depend on the active language (#107). The budget itself is
+  // scripts/measure-popup.mjs, which needs a real layout engine and so cannot
+  // run in this suite -- jsdom reports every height as 0. What can be checked
+  // here is that the two still speak the same language.
+  const css = read('popup/popup.css');
+  const declared = /--popup-width:\s*(\d+)px/.exec(css);
+  assert.ok(declared, 'popup.css must declare --popup-width');
+  assert.match(css, /width:\s*var\(--popup-width\)/, 'body must take its width from the token');
+  assert.ok(Number(declared[1]) <= 800, 'the stores clamp a popup to 800px wide');
+  assert.match(
+    css,
+    /max-width:\s*100%/,
+    'body needs max-width so a vertical scrollbar cannot cost a horizontal one'
+  );
+  assert.match(
+    read('scripts/measure-popup.mjs'),
+    /--popup-width/,
+    'measure-popup.mjs must read the shipped width out of the CSS'
+  );
 });
 
 test('the popup builds nodes instead of assigning markup', () => {

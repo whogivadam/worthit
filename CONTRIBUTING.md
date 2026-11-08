@@ -22,7 +22,19 @@ npm run lint         # eslint
 npx web-ext lint     # extension-specific linting
 npm run build        # produces web-ext-artifacts/*.zip
 npm run check-zip    # asserts the zip holds only runtime files
+npm run measure-popup # popup height per language, in headless Chrome
 ```
+
+`measure-popup` is the popup's height budget. Both stores clamp an action popup to 800 x 600 CSS px
+and scroll anything past it, so a view that fits in one language and overflows in another is a bug
+([#107](https://github.com/whogivadam/worthit/issues/107)) — the script renders the real markup with
+the real string table in every language, at the shipped width and 15px narrower for a classic
+scrollbar, and fails if a budgeted view passes 584px or if the footer's rate line wraps. It needs a
+real layout engine, so it drives Chrome (`CHROME_PATH=` to point it elsewhere) and is not part of
+`npm test`, which stays browser-free. Run it after any change to `popup/popup.css`,
+`popup/popup.html` or a translated string that the popup renders.
+`npm run measure-popup -- --page out.html` writes the harness page itself: open it with
+`?view=settings&lang=de&width=440` to photograph one view for a pull request.
 
 Load the extension while developing:
 
