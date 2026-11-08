@@ -1,6 +1,6 @@
 {
   "name": "worthit",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "private": true,
   "description": "Browser extension for Firefox and Chrome that converts any price into the hours of work needed to pay for it.",
   "license": "MIT",
