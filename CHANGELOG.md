@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.1](https://github.com/whogivadam/worthit/compare/v0.6.0...v0.6.1) (2026-11-08)
+
+
+### Bug Fixes
+
+* **overlay:** badge prices past ten million and stop stray badges ([#110](https://github.com/whogivadam/worthit/issues/110)) ([af86a4c](https://github.com/whogivadam/worthit/commit/af86a4ca555b8af86308d71a7637a40fd1e5ca9d))
+* **parser:** read million and billion magnitudes beside a currency ([#111](https://github.com/whogivadam/worthit/issues/111)) ([e9a1c24](https://github.com/whogivadam/worthit/commit/e9a1c248e7d15b8d093d42e57c387db83ad6c037))
+* **popup:** widen to 440px and budget the height per language ([#112](https://github.com/whogivadam/worthit/issues/112)) ([b0ea701](https://github.com/whogivadam/worthit/commit/b0ea7019f709d167b8698357466f10bc7ac3dd4f))
+
 ## [0.6.0](https://github.com/whogivadam/worthit/compare/v0.5.2...v0.6.0) (2026-11-05)
 
 
