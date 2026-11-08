@@ -21,10 +21,11 @@
   // One scan per 300 ms at most, however busy the page is.
   const SCAN_INTERVAL_MS = 300;
 
-  // Anything outside this, after conversion to the home currency, is not a
-  // price anyone is deciding about.
+  // Below one unit of the home currency is not a price anyone is deciding about.
+  // There is deliberately no ceiling: every reader has a different budget, and
+  // a fixed one hid every home on booli.se -- while meaning a flat in kronor, a
+  // car in yen and a phone in dong.
   const MIN_HOME_AMOUNT = 1;
-  const MAX_HOME_AMOUNT = 10000000;
 
   // Editable fields, code listings, and anything already handled.
   const SKIP_SELECTOR = [
@@ -283,7 +284,7 @@ span[data-worthit-badge] {
         : Rates.crossConvert(price.amount, price.currency, home, state.cache && state.cache.rates);
 
     if (amountHome === null) return unknownBadge(price);
-    if (amountHome < MIN_HOME_AMOUNT || amountHome > MAX_HOME_AMOUNT) return null;
+    if (amountHome < MIN_HOME_AMOUNT) return null;
 
     const rate = Calc.hourlyRate(state.settings);
     const totalHours = Calc.totalHoursFor(amountHome, rate);
@@ -415,9 +416,34 @@ span[data-worthit-badge] {
   }
 
   /**
+   * A container's text as the page wrote it, plus where `node` sits in it.
+   *
+   * textContent would include the badges already placed inside the container,
+   * and a badge's own text reads as part of a price: on booli.se the fee
+   * '10 236 kr' gets '5.2d', the container then reads '10 236 kr5.2d', and
+   * 'kr5.2' was badged as 5.20 kronor beside the year the house was built.
+   */
+  function pageTextOf(container, node) {
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    let text = '';
+    let offset = -1;
+    let current = walker.nextNode();
+    while (current) {
+      const parent = current.parentElement;
+      if (!parent || !parent.closest('[' + BADGE_ATTR + ']')) {
+        if (current === node) offset = text.length;
+        text += current.nodeValue;
+      }
+      current = walker.nextNode();
+    }
+    return { text: text, offset: offset };
+  }
+
+  /**
    * Shops often break a price across elements, as in
    * <span>1 299</span><span>kr</span>. When a node holds nothing but a number
-   * and its parent reads as exactly one price, the badge goes on the parent.
+   * and its parent reads as exactly one price built from that number, the badge
+   * goes on the parent.
    */
   function trySplitPrice(node) {
     if (!BARE_NUMBER.test(node.nodeValue || '')) return false;
@@ -428,9 +454,13 @@ span[data-worthit-badge] {
     for (let depth = 0; container && depth < 3; depth += 1) {
       if (container === document.body || container.hasAttribute(DONE_ATTR)) return false;
 
-      const combined = container.textContent;
+      const page = pageTextOf(container, node);
+      const combined = page.text;
       if (combined && combined.length <= 200) {
         const prices = Parser.parsePrices(combined, state.context);
+        // The one price has to be this number's: a bare '1929' in a fact list
+        // that also holds a fee is a year, and the fee has its own badge.
+        if (prices.length === 1 && !spansNode(prices[0], page.offset, node)) return false;
         if (prices.length === 1) {
           if (isScreenReaderOnly(container)) {
             processedText.add(node);
@@ -449,6 +479,15 @@ span[data-worthit-badge] {
       container = container.parentElement;
     }
     return false;
+  }
+
+  /** True when the price's span covers the digits of `node`. */
+  function spansNode(price, offset, node) {
+    if (offset < 0) return false;
+    const value = node.nodeValue;
+    const first = offset + value.search(/\d/);
+    const last = offset + value.length - 1 - value.split('').reverse().join('').search(/\d/);
+    return price.index <= first && last < price.index + price.length;
   }
 
   function scan(root) {
