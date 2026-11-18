@@ -261,14 +261,14 @@ test('a split price in visible markup still gets its badge', async () => {
 // 50 000 000 kr at 173.08 kr/h is 288 889 h, 36 111 workdays.
 test('amounts under 1 home unit are ignored, and there is no ceiling', async () => {
   const page = await mount('<p>0,50 kr</p><p>50 000 000 kr</p><p>1 299 kr</p>');
-  assert.deepEqual(page.labels(), ['36111d', '7h30m']);
+  assert.deepEqual(page.labels(), ['138y231d', '7h30m']);
 });
 
 // booli.se: 23 450 000 kr is 135 490 h, 16 936 workdays. A fixed 10 000 000
 // ceiling used to hide it, and every other home on the site.
 test('a home priced over ten million still gets its badge', async () => {
   const page = await mount('<p>Utropspris</p><p>23 450 000 kr</p>');
-  assert.deepEqual(page.labels(), ['16936d']);
+  assert.deepEqual(page.labels(), ['65y36d']);
 });
 
 test('large amounts are badged in a high-denomination home currency too', async () => {
