@@ -168,11 +168,11 @@ test('the workday bar fills proportionally', () => {
 });
 
 test('anything past one workday is reported as overflow days', () => {
-  assert.equal(calc.workdayBlocks(4, 40).overflowDays, 0);
-  assert.equal(calc.workdayBlocks(8, 40).overflowDays, 0);
-  assert.equal(calc.workdayBlocks(12, 40).overflowDays, 0.5);
-  assert.equal(calc.workdayBlocks(20, 40).overflowDays, 1.5);
-  assert.equal(calc.workdayBlocks(80, 40).overflowDays, 9);
+  assert.equal(calc.workdayBlocks(4, 40).overflow, null);
+  assert.equal(calc.workdayBlocks(8, 40).overflow, null);
+  assert.deepEqual(calc.workdayBlocks(12, 40).overflow, { key: 'result.overflowDays', days: 0.5 });
+  assert.deepEqual(calc.workdayBlocks(20, 40).overflow, { key: 'result.overflowDays', days: 1.5 });
+  assert.deepEqual(calc.workdayBlocks(80, 40).overflow, { key: 'result.overflowDays', days: 9 });
   // the bar is full whenever there is overflow
   assert.deepEqual(calc.workdayBlocks(20, 40).filled, [1, 1, 1, 1, 1, 1, 1, 1]);
 });
@@ -231,7 +231,7 @@ test('the badge, framing and overflow switch to years past one work year', () =>
 });
 
 test('the workday bar degrades safely on bad input', () => {
-  const empty = { filled: [0, 0, 0, 0, 0, 0, 0, 0], overflowDays: 0, overflow: null };
+  const empty = { filled: [0, 0, 0, 0, 0, 0, 0, 0], overflow: null };
   assert.deepEqual(calc.workdayBlocks(5, 0), empty);
   assert.deepEqual(calc.workdayBlocks(NaN, 40), empty);
 });
