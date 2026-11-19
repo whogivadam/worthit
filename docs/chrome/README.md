@@ -191,10 +191,22 @@ and that market's currency as the home currency, so a German reader sees euros o
 The five English and Swedish shots in `docs/amo/` serve the English listing. Unlike AMO, these go up
 through the same dashboard as everything else.
 
-## Automatic publishing
+## Publishing: the zip goes up by hand
 
-`npm run publish:chrome` runs `chrome-webstore-upload`, which uploads and submits for review in one
-call and returns. Review is asynchronous and arrives by email, so there is deliberately nothing to
+**Chrome releases are uploaded by hand, every release.** This is the standing process, not a
+fallback for a bad day: the OAuth refresh token Google issues this project lasts 7 days (see
+[The refresh token expires every 7 days](#the-refresh-token-expires-every-7-days)), so the release
+workflow's Chrome step is expected to fail at `Fetching token...` and the zip is uploaded at the
+developer console afterwards.
+
+The package to upload lands in `web-ext-artifacts/` as a `.zip`, fetched from the tag's GitHub
+release by `npm run chrome:zip` — never built from the working tree. See
+[Uploading the zip by hand](#uploading-the-zip-by-hand), which is the section to follow for a normal
+release.
+
+The automated step is kept in the workflow anyway, because it costs nothing and publishes whenever
+the token happens to be fresh: `npm run publish:chrome` runs `chrome-webstore-upload`, which uploads
+and submits for review in one call and returns. Review is asynchronous and arrives by email, so there is deliberately nothing to
 wait for — the AMO step learned that the hard way, reporting three successful releases as failures
 until `--approval-timeout=0` stopped it blocking on a human reviewer.
 
@@ -240,11 +252,21 @@ verified at the top private domain, and Google'''s own guidance warns against ho
 somewhere you cannot prove you own the subdomain — which rules out GitHub Pages too.
 
 Buying a domain would fix it, and would also give both store listings a privacy policy that is not a
-`PRIVACY.md` blob link. Until that is worth doing, **uploading the zip by hand is the accepted
-fallback**, so both Chrome steps are `continue-on-error`. They run last, after the tag, the GitHub
-release and the AMO submission, so a dead token leaves a published release and one step to finish by
-hand rather than a red release that actually worked. The job summary says so, and names the tag whose
-zip to upload.
+`PRIVACY.md` blob link. Until that is worth doing, **uploading the zip by hand is the process**, so
+both Chrome steps are `continue-on-error`. They run last, after the tag, the GitHub release and the
+AMO submission, so a dead token leaves a published release and one step to finish by hand rather
+than a red release that actually worked. The job summary says so, and names the tag whose zip to
+upload.
+
+The token has been expired at every release since v0.6.1. v0.7.0 (2026-11-19) failed the same way,
+within a second of starting:
+
+```
+Fetching token...
+❌ Invalid grant: The authentication keys are probably invalid or expired
+```
+
+so plan for the hand upload rather than being surprised by it.
 
 A token reissued while the consent screen is still in Testing gets the same 7-day limit, so
 regenerating it is only worth doing right before a release.
@@ -254,11 +276,13 @@ regenerating it is only worth doing right before a release.
 ```sh
 npm run chrome:zip          # the latest release
 npm run chrome:zip v0.4.0   # a named tag
+# -> web-ext-artifacts/worth_it_-<version>.zip
 ```
 
 That downloads the zip attached to the tag's GitHub release into `web-ext-artifacts/`, checks that
 the version inside it matches the tag, runs `check-zip` over it and prints the path to upload at
 <https://chrome.google.com/webstore/devconsole/>. It needs the GitHub CLI, logged in.
+`web-ext-artifacts/` is git-ignored, so the file is a local artifact and never committed.
 
 **Never build the hand-upload zip from the working tree.** The one to upload is the artifact CI
 built from the tag and sent to AMO; a local `npm run build` is a different one. While a release pull
@@ -269,9 +293,11 @@ would ship Chrome the fixes Firefox gets as the following version, under the sam
 Both halves of a release are then on the same bytes, which also means `shasum -a 256` of the local
 file matches the asset on the release page if you ever need to prove it.
 
-Whether the hand upload is needed at all is decided by the Chrome step of the release run, not in
-advance: v0.4.1 published straight from CI with a three-day-old token and no version in review,
-while v0.4.0 needed the upload. Read the step's log before reaching for this.
+CI *can* do this when a token is fresh — v0.4.1, v0.5.0 and v0.5.1 went up from the workflow on a
+three-day-old token with no version in review — so read the Chrome step's log before concluding
+anything about a given release. But a token reissued while the consent screen is in Testing expires
+again in 7 days, which is shorter than the gap between most releases, so the hand upload is what to
+expect and this section is the route to follow.
 
 ## Checking a build in Chrome
 

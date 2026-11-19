@@ -90,11 +90,13 @@ jobs:
       # continue-on-error, because the refresh token expires every 7 days: the
       # OAuth consent screen stays in Testing, which is what Google issues
       # short-lived tokens for, and leaving Testing needs a homepage and privacy
-      # policy on a domain we own and have verified. Zip uploads by hand are the
-      # accepted cost instead. This step runs last, after the tag, the GitHub
-      # release and the AMO submission, so failing it would report a release
-      # that worked as a release that did not. The summary says what is left to
-      # do by hand.
+      # policy on a domain we own and have verified. So this step is expected to
+      # fail and the zip is uploaded by hand at the developer console -- that is
+      # the standing process for Chrome, not a fallback; the step is kept only
+      # because it publishes for free whenever the token happens to be fresh.
+      # It runs last, after the tag, the GitHub release and the AMO submission,
+      # so failing it would report a release that worked as a release that did
+      # not. The summary says what is left to do by hand.
       - name: Submit to the Chrome Web Store
         id: chrome
         if: ${{ steps.release.outputs.release_created }}
