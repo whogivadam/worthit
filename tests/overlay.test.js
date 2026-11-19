@@ -293,6 +293,28 @@ test('a bare number does not pick up a neighbour price, or a badge, as its own',
   assert.equal(page.badges()[0].parentElement.tagName, 'SPAN');
 });
 
+// filmstaden.se's ticket list: the seat number sits in its own cell beside the
+// price, and the bare '39' climbed to the row and read '39 159.00 kr' as one
+// price of 39 159 kronor.
+test('a bare number is not glued onto the whole price beside it', async () => {
+  const row = (seat, price) =>
+    '<div class="row"><div><span>Rad</span> <span>Plats</span></div>' +
+    `<div><span>Standard</span> <span>3</span> <span>${seat}</span></div>` +
+    ` <span>${price}</span></div>`;
+  const page = await mount(row('39', '159.00 kr') + row('40', '143.10 kr'));
+  await page.settle();
+  const titles = page.badges().map((badge) => badge.getAttribute('title'));
+  assert.equal(titles.length, 2);
+  assert.ok(titles.every((title) => !/\d \d{3}\.\d{2}/.test(title)), titles.join(' | '));
+});
+
+// The split price it is there for still works when the number is the cell.
+test('a bare number still joins a lone currency beside it', async () => {
+  const page = await mount('<div><span>Pris</span> <span>1 299</span> <span>kr</span></div>');
+  await page.settle();
+  assert.deepEqual(page.labels(), ['7h30m']);
+});
+
 test('an unconvertible currency gets an honest question mark', async () => {
   // ZWL is in the currency table but not in this rate cache.
   const page = await mount('<p>Pris 500 ZWL</p>');
