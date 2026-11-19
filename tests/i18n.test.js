@@ -224,6 +224,47 @@ test('render takes what calc returns, and nothing from calc breaks it', () => {
   assert.equal(i18n.render({}), '');
 });
 
+test('years and days render compactly in every language', () => {
+  const expected = {
+    en: ['1y23d', '2y', '1y23d of your life', '+1y22d'],
+    sv: ['1å23d', '2å', '1å23d av ditt liv', '+1å22d'],
+    fr: ['1a23j', '2a', '1a23j de votre vie', '+1a22j'],
+    de: ['1J23T', '2J', '1J23T deines Lebens', '+1J22T'],
+    es: ['1a23d', '2a', '1a23d de tu vida', '+1a22d'],
+    'pt-BR': ['1a23d', '2a', '1a23d da sua vida', '+1a22d'],
+    ja: ['1年23日', '2年', '人生の1年23日分', '+1年22日'],
+    'zh-CN': [
+      '1年23天',
+      '2年',
+      '你人生中的 1 年 23 天',
+      '+1年22天',
+    ],
+    'zh-TW': [
+      '1年23天',
+      '2年',
+      '你人生中的 1 年 23 天',
+      '+1年22天',
+    ],
+  };
+  // Named rather than looped over, so a new language has to be written out here
+  // too rather than quietly rendering the English form.
+  assert.deepEqual(Object.keys(expected).sort(), [...i18n.LANGUAGES].sort());
+
+  Object.keys(expected).forEach((language) => {
+    i18n.setLanguage(language);
+    assert.deepEqual(
+      [
+        i18n.formatBadge(2264, 40),
+        i18n.formatBadge(4160, 40),
+        i18n.render(calc.framing(2264, 40)),
+        i18n.render(calc.workdayBlocks(2264, 40).overflow),
+      ],
+      expected[language],
+      language
+    );
+  });
+});
+
 test('a worked example renders end to end in both languages', () => {
   // 25000/month over a 40-hour week is 144.23/h, so 1299 kr is 9 h 0 min.
   const rate = calc.hourlyRate({ incomeMode: 'monthly', monthly: 25000, hoursPerWeek: 40 });

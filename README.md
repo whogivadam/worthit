@@ -3,8 +3,9 @@
 A browser extension for Firefox and Chrome that turns any price into the time it costs you: the
 hours of work needed to pay for it, based on your own after-tax income.
 
-Prices on a page get a small red badge — `3h45m`, or `2.5d` once it passes a working day — and the
-popup lets you check any amount by hand, in your currency or another one.
+Prices on a page get a small red badge — `3h45m`, `2.5d` once it passes a working day, or `1y23d`
+once it passes a work year (`hours_per_week * 52` hours) — and the popup lets you check any amount
+by hand, in your currency or another one.
 
 ```
 1 299 kr  [3h12m]        €89,90  [1h47m]        $1,599  [2.1d]

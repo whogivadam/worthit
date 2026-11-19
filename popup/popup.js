@@ -409,8 +409,7 @@
       block.append(inner);
       blocks.append(block);
     });
-    $('overflow').textContent =
-      bar.overflowDays > 0 ? I18n.t('result.overflowDays', { days: bar.overflowDays }) : '';
+    $('overflow').textContent = I18n.render(bar.overflow);
   }
 
   function runCheck() {

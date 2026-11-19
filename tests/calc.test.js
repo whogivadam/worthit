@@ -168,18 +168,72 @@ test('the workday bar fills proportionally', () => {
 });
 
 test('anything past one workday is reported as overflow days', () => {
-  assert.equal(calc.workdayBlocks(4, 40).overflowDays, 0);
-  assert.equal(calc.workdayBlocks(8, 40).overflowDays, 0);
-  assert.equal(calc.workdayBlocks(12, 40).overflowDays, 0.5);
-  assert.equal(calc.workdayBlocks(20, 40).overflowDays, 1.5);
-  assert.equal(calc.workdayBlocks(80, 40).overflowDays, 9);
+  assert.equal(calc.workdayBlocks(4, 40).overflow, null);
+  assert.equal(calc.workdayBlocks(8, 40).overflow, null);
+  assert.deepEqual(calc.workdayBlocks(12, 40).overflow, { key: 'result.overflowDays', days: 0.5 });
+  assert.deepEqual(calc.workdayBlocks(20, 40).overflow, { key: 'result.overflowDays', days: 1.5 });
+  assert.deepEqual(calc.workdayBlocks(80, 40).overflow, { key: 'result.overflowDays', days: 9 });
   // the bar is full whenever there is overflow
   assert.deepEqual(calc.workdayBlocks(20, 40).filled, [1, 1, 1, 1, 1, 1, 1, 1]);
 });
 
+// A work year is hoursPerWeek * 52 hours: 2080 h at 40 h/week (8 h workdays),
+// 1560 h at 30 h/week (6 h workdays).
+test('a work year follows the hours-per-week setting', () => {
+  assert.equal(calc.workYears(2072, 40), null, '259 workdays is still days');
+  assert.deepEqual(calc.workYears(2080, 40), { years: 1, days: 0 });
+  assert.deepEqual(calc.workYears(2088, 40), { years: 1, days: 1 });
+  assert.deepEqual(calc.workYears(2264, 40), { years: 1, days: 23 });
+  assert.deepEqual(calc.workYears(4160, 40), { years: 2, days: 0 });
+
+  assert.equal(calc.workYears(1554, 30), null);
+  assert.deepEqual(calc.workYears(1560, 30), { years: 1, days: 0 });
+  assert.deepEqual(calc.workYears(1698, 30), { years: 1, days: 23 });
+  // the same hours are a bigger share of a shorter work year
+  assert.deepEqual(calc.workYears(2080, 30), { years: 1, days: 87 });
+});
+
+test('whole days that round up to a full year carry into the years', () => {
+  // 259.5 workdays rounds to 260, which is one year, not "260d"
+  assert.deepEqual(calc.workYears(2076, 40), { years: 1, days: 0 });
+  // 519.5 rounds to 520: "2y", not "1y260d"
+  assert.deepEqual(calc.workYears(4156, 40), { years: 2, days: 0 });
+});
+
+test('work years refuse to guess without usable settings', () => {
+  assert.equal(calc.workYears(5000, 0), null);
+  assert.equal(calc.workYears(NaN, 40), null);
+  assert.equal(calc.workYears(-1, 40), null);
+});
+
+test('the badge, framing and overflow switch to years past one work year', () => {
+  assert.deepEqual(calc.badgeParts(2072, 40), { key: 'badge.days', days: 259 });
+  assert.deepEqual(calc.badgeParts(2080, 40), { key: 'badge.years', years: 1 });
+  assert.deepEqual(calc.badgeParts(2264, 40), { key: 'badge.yearsDays', years: 1, days: 23 });
+  assert.deepEqual(calc.badgeParts(4160, 40), { key: 'badge.years', years: 2 });
+  assert.deepEqual(calc.badgeParts(1698, 30), { key: 'badge.yearsDays', years: 1, days: 23 });
+
+  assert.equal(calc.framing(2072, 40).key, 'framing.workWeeks');
+  assert.deepEqual(calc.framing(2080, 40), { key: 'framing.yearsOfLife', years: 1 });
+  assert.deepEqual(calc.framing(2264, 40), { key: 'framing.yearsDaysOfLife', years: 1, days: 23 });
+
+  // overflow is everything past the first workday, so it reaches a year one
+  // workday later than the total does
+  assert.equal(calc.workdayBlocks(4, 40).overflow, null);
+  assert.deepEqual(calc.workdayBlocks(20, 40).overflow, { key: 'result.overflowDays', days: 1.5 });
+  assert.deepEqual(calc.workdayBlocks(2080, 40).overflow, { key: 'result.overflowDays', days: 259 });
+  assert.deepEqual(calc.workdayBlocks(2088, 40).overflow, { key: 'result.overflowYears', years: 1 });
+  assert.deepEqual(calc.workdayBlocks(2264, 40).overflow, {
+    key: 'result.overflowYearsDays',
+    years: 1,
+    days: 22,
+  });
+});
+
 test('the workday bar degrades safely on bad input', () => {
-  assert.deepEqual(calc.workdayBlocks(5, 0), { filled: [0, 0, 0, 0, 0, 0, 0, 0], overflowDays: 0 });
-  assert.deepEqual(calc.workdayBlocks(NaN, 40), { filled: [0, 0, 0, 0, 0, 0, 0, 0], overflowDays: 0 });
+  const empty = { filled: [0, 0, 0, 0, 0, 0, 0, 0], overflow: null };
+  assert.deepEqual(calc.workdayBlocks(5, 0), empty);
+  assert.deepEqual(calc.workdayBlocks(NaN, 40), empty);
 });
 
 test('a worked example holds end to end', () => {
