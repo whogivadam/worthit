@@ -427,16 +427,36 @@ span[data-worthit-badge] {
     const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
     let text = '';
     let offset = -1;
+    const segments = [];
     let current = walker.nextNode();
     while (current) {
       const parent = current.parentElement;
       if (!parent || !parent.closest('[' + BADGE_ATTR + ']')) {
         if (current === node) offset = text.length;
+        segments.push({ node: current, start: text.length, end: text.length + current.nodeValue.length });
         text += current.nodeValue;
       }
       current = walker.nextNode();
     }
-    return { text: text, offset: offset };
+    return { text: text, offset: offset, segments: segments };
+  }
+
+  /**
+   * True when the price reaches into the digits of another text node that is a
+   * price on its own. Joining the container's text glues neighbouring cells
+   * together: on filmstaden.se the seat number '39' and the cell beside it,
+   * '159.00 kr', read as one price of '39 159.00 kr'. A split price is a bare
+   * number beside its currency, never a number beside another whole price.
+   */
+  function mergesAnotherPrice(price, page, node) {
+    const start = price.index;
+    const end = price.index + price.length;
+    return page.segments.some(function (segment) {
+      if (segment.node === node || segment.end <= start || segment.start >= end) return false;
+      const overlap = page.text.slice(Math.max(start, segment.start), Math.min(end, segment.end));
+      if (!/\d/.test(overlap)) return false;
+      return Parser.parsePrices(segment.node.nodeValue, state.context).length > 0;
+    });
   }
 
   /**
@@ -461,6 +481,7 @@ span[data-worthit-badge] {
         // The one price has to be this number's: a bare '1929' in a fact list
         // that also holds a fee is a year, and the fee has its own badge.
         if (prices.length === 1 && !spansNode(prices[0], page.offset, node)) return false;
+        if (prices.length === 1 && mergesAnotherPrice(prices[0], page, node)) return false;
         if (prices.length === 1) {
           if (isScreenReaderOnly(container)) {
             processedText.add(node);
