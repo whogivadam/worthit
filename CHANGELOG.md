@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.7.0](https://github.com/whogivadam/worthit/compare/v0.6.1...v0.7.0) (2026-11-19)
+
+
+### Features
+
+* **calc:** show time past one work year as years + days (1y23d) ([#120](https://github.com/whogivadam/worthit/issues/120)) ([d5fc696](https://github.com/whogivadam/worthit/commit/d5fc696c27508b5d890e71680b5e9808490c19e5))
+
+
+### Bug Fixes
+
+* **overlay:** read a price split across hidden and visible spans ([#126](https://github.com/whogivadam/worthit/issues/126)) ([38a5674](https://github.com/whogivadam/worthit/commit/38a5674cee2bb49ab93ce434a5c5ff20211cbac4))
+* **overlay:** stop a bare number borrowing a neighbour's currency ([#130](https://github.com/whogivadam/worthit/issues/130)) ([1b47daf](https://github.com/whogivadam/worthit/commit/1b47daf10f9194a02743c9e2712aa56b62cda481))
+* **parser:** stop misreading prices on filmstaden.se ([#123](https://github.com/whogivadam/worthit/issues/123)) ([8ebd96b](https://github.com/whogivadam/worthit/commit/8ebd96bf93188302cc69cd6cec10aba6aaaf232e))
+
 ## [0.6.1](https://github.com/whogivadam/worthit/compare/v0.6.0...v0.6.1) (2026-11-08)
 
 
