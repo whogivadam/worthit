@@ -258,6 +258,173 @@ test('a split price in visible markup still gets its badge', async () => {
   assert.deepEqual(page.labels(), ['7h30m']);
 });
 
+// #114. bestbuy.com writes the price twice: the whole of it in an sr-only span,
+// and the visible one as three aria-hidden siblings whose cents are told apart
+// by font-size alone. Joined, those three read as '$59999'; the hidden copy is
+// what says where the decimal point goes, and the badge has to land on the
+// pieces the reader can see rather than in the copy.
+const CLIPPED_HEAD =
+  '<style>.sr-only,.a-offscreen{position:absolute;width:1px;height:1px;' +
+  'overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}</style>';
+
+const BEST_BUY =
+  '<div data-testid="price-block-customer-price" style="display: flex; ' +
+  'flex-direction: row; align-items: flex-start;">' +
+  '<span class="font-sans text-default text-style-body-md-400 sr-only">$599.99</span>' +
+  '<span aria-hidden="true" style="font-size: 14px; line-height: 20px; font-weight: 500;" ' +
+  'class="font-sans text-default text-style-body-md-400">$</span>' +
+  '<span elementtiming="price_et" aria-hidden="true" style="font-size: 24px; ' +
+  'line-height: 28px; font-weight: 500;" class="font-sans text-default ' +
+  'text-style-body-md-400">599</span>' +
+  '<span aria-hidden="true" style="font-size: 12px; line-height: 20px; font-weight: 500;" ' +
+  'class="font-sans text-default text-style-body-md-400">99</span></div>';
+
+// Amazon's shape: .a-offscreen carries the whole price and the visible pieces
+// spell it out in full, decimal point included, so the pieces alone already
+// read as one price once the hidden copy is kept out of the reading.
+const AMAZON =
+  '<span class="a-price">' +
+  '<span class="a-offscreen">$599.99</span>' +
+  '<span aria-hidden="true">' +
+  '<span class="a-price-symbol">$</span>' +
+  '<span class="a-price-whole">599<span class="a-price-decimal">.</span></span>' +
+  '<span class="a-price-fraction">99</span>' +
+  '</span></span>';
+
+const US = { url: 'https://www.example.com/p/1', lang: 'en-US', head: CLIPPED_HEAD };
+
+// 599.99 USD is 5927.00 SEK at 9.8785, which is 34 h 15 min of a 173.08/h wage.
+const USD_PRICE = /= 5927\.00 SEK/;
+
+test('the Best Buy fixture gets one badge, for 599.99, after the cents', async () => {
+  const page = await mount(BEST_BUY, null, US);
+  const badges = page.badges();
+  assert.equal(badges.length, 1);
+
+  const title = badges[0].getAttribute('title');
+  assert.match(title, /\$599\.99/, 'the price as the page writes it');
+  assert.match(title, USD_PRICE, 'and the amount it really is, not 59999');
+
+  assert.equal(badges[0].previousElementSibling.textContent, '99', 'after the cents span');
+  assert.equal(
+    badges[0].parentElement.getAttribute('data-testid'),
+    'price-block-customer-price',
+    'and inside the price block itself'
+  );
+});
+
+test('the Amazon fixture gets one badge, for the right amount', async () => {
+  const page = await mount(AMAZON, null, US);
+  const badges = page.badges();
+  assert.equal(badges.length, 1);
+  assert.match(badges[0].getAttribute('title'), USD_PRICE);
+});
+
+test('no badge is ever put inside the hidden copy of a price', async () => {
+  for (const fixture of [BEST_BUY, AMAZON]) {
+    const page = await mount(fixture, null, US);
+    assert.equal(page.badges().length, 1);
+    assert.equal(
+      page.document.querySelector('.sr-only [data-worthit-badge], .a-offscreen [data-worthit-badge]'),
+      null,
+      'the badge must be where it can be seen'
+    );
+    // and the copy itself is never badged a second time
+    assert.equal(page.document.querySelectorAll('[data-worthit-badge]').length, 1);
+  }
+});
+
+test('a hidden price that is not the visible one is not merged into it', async () => {
+  // A copy only decides where the decimal point goes when it is the same
+  // digits. These are not: the visible pieces are read on their own instead.
+  const page = await mount(
+    '<div><span class="sr-only">$1,299.00</span>' +
+      '<span style="font-size: 14px">$</span>' +
+      '<span style="font-size: 24px">599</span>' +
+      '<span style="font-size: 12px">99</span></div>',
+    null,
+    US
+  );
+  assert.equal(page.badges().length, 1);
+  const title = page.badges()[0].getAttribute('title');
+  assert.match(title, /\$599\.99/);
+  assert.doesNotMatch(title, /1,?299/, 'the hidden price is not what is badged');
+});
+
+test('smaller or raised digits beside a price are read as its minor units', async () => {
+  // No hidden copy at all: the cents are told apart by being set smaller than
+  // the integer, by being a <sup>, or by being raised.
+  const fixtures = [
+    '<p><span style="font-size: 24px">$599</span><span style="font-size: 12px">99</span></p>',
+    '<p>$599<sup>99</sup></p>',
+    '<p>$599<span style="vertical-align: super">99</span></p>',
+  ];
+  for (const fixture of fixtures) {
+    const page = await mount(fixture, null, US);
+    assert.equal(page.badges().length, 1, fixture);
+    assert.match(page.badges()[0].getAttribute('title'), USD_PRICE, fixture);
+  }
+});
+
+test('a footnote is not a run of cents', async () => {
+  const page = await mount('<p>$599<sup>1</sup></p>', null, US);
+  assert.equal(page.badges().length, 1);
+  const title = page.badges()[0].getAttribute('title');
+  // 599 USD is 5917.22 SEK; 599.01 would be 5917.32 and 5991 would be 59 171.
+  assert.match(title, /= 5917\.22 SEK/, '599 USD, with the footnote left out of it');
+});
+
+test('a gap between the digits is a footnote too, not cents', async () => {
+  const page = await mount('<p>$599 <sup>99</sup></p>', null, US);
+  assert.equal(page.badges().length, 1);
+  assert.match(page.badges()[0].getAttribute('title'), /= 5917\.22 SEK/);
+});
+
+test('a currency with no minor units never merges the digits beside it', async () => {
+  // The yen is written without cents, so a small '99' beside it is something
+  // else -- a footnote, a rating, a unit -- and never part of the price.
+  const page = await mount('<p>\u00a5599<sup>99</sup></p>', null, {
+    url: 'https://shop.example.jp/p/1',
+    lang: 'ja',
+    head: CLIPPED_HEAD,
+  });
+  assert.equal(page.badges().length, 1);
+  const title = page.badges()[0].getAttribute('title');
+  assert.match(title, /\u00a5599/);
+  assert.doesNotMatch(title, /599\.99|59999/, 'the yen has no cents to merge');
+});
+
+test('a grouped price is marked, so rescans add no second badge', async () => {
+  const page = await mount(BEST_BUY, null, US);
+  const container = page.document.querySelector('[data-testid="price-block-customer-price"]');
+  assert.equal(container.getAttribute('data-worthit'), '');
+
+  // Any mutation makes the observer scan again, twice over.
+  page.document.body.appendChild(page.document.createElement('div'));
+  await page.settle();
+  page.document.body.appendChild(page.document.createElement('div'));
+  await page.settle();
+  assert.equal(page.badges().length, 1);
+});
+
+test('switching the overlay off clears a grouped badge and its mark', async () => {
+  const page = await mount(BEST_BUY, null, US);
+  assert.equal(page.badges().length, 1);
+
+  await page.change({
+    settings: Object.assign({}, DEFAULT_STORED.settings, { overlayEnabled: false }),
+  });
+  assert.equal(page.badges().length, 0);
+  assert.equal(
+    page.document.querySelector('[data-testid="price-block-customer-price"]')
+      .hasAttribute('data-worthit'),
+    false
+  );
+
+  await page.change({ settings: DEFAULT_STORED.settings });
+  assert.equal(page.badges().length, 1, 'and it comes back exactly once');
+});
+
 // 50 000 000 kr at 173.08 kr/h is 288 889 h, 36 111 workdays.
 test('amounts under 1 home unit are ignored, and there is no ceiling', async () => {
   const page = await mount('<p>0,50 kr</p><p>50 000 000 kr</p><p>1 299 kr</p>');

@@ -70,6 +70,12 @@
   // them lives here; split-price parents are marked with data-worthit instead.
   let processedText = new WeakSet();
 
+  // getComputedStyle is not cheap, and reading a price group asks about every
+  // element in it once per candidate node inside it. The verdict is remembered
+  // for the length of one scan and thrown away between scans, because a page is
+  // free to restyle itself in between.
+  let hiddenElements = new WeakMap();
+
   // A shadow root sees none of the document's stylesheets, so a badge inside
   // one would be styled by whatever the component itself says about a <span> --
   // on komplett.se, the 46px of the price it sits beside. The sheet is put into
@@ -341,6 +347,14 @@ span[data-worthit-badge] {
    * must not be mistaken for a clipped one.
    */
   function isScreenReaderOnly(element) {
+    if (!element) return false;
+    if (hiddenElements.has(element)) return hiddenElements.get(element);
+    const verdict = computeScreenReaderOnly(element);
+    hiddenElements.set(element, verdict);
+    return verdict;
+  }
+
+  function computeScreenReaderOnly(element) {
     let current = element;
     for (let depth = 0; current && depth <= 4; depth += 1) {
       if (current === document.body) return false;
@@ -377,7 +391,13 @@ span[data-worthit-badge] {
     if (!/\d/.test(text)) return false;
 
     const prices = Parser.parsePrices(text, state.context);
-    if (!prices.length) return trySplitPrice(node);
+
+    // A price can be written across several elements -- a bare number beside its
+    // currency, an integer beside its minor units, a hidden copy of the whole
+    // thing beside pieces of it -- and all of that is read off the container
+    // rather than off this one node.
+    if (tryContainerPrice(node, prices.length === 0)) return true;
+    if (!prices.length) return false;
 
     // Marked as handled either way: a rescan would reach the same verdict, and
     // leaving it unmarked makes every later pass walk it again.
@@ -415,30 +435,203 @@ span[data-worthit-badge] {
     return inserted;
   }
 
+  // A container longer than this is prose with a price in it, not a price
+  // written across elements. The walk below stops as soon as it is passed, so
+  // climbing out of a product card costs a few nodes rather than all of them.
+  const MAX_GROUP_TEXT = 200;
+
   /**
-   * A container's text as the page wrote it, plus where `node` sits in it.
+   * A container's text as a reader sees it, plus where `node` sits in it.
    *
    * textContent would include the badges already placed inside the container,
    * and a badge's own text reads as part of a price: on booli.se the fee
    * '10 236 kr' gets '5.2d', the container then reads '10 236 kr5.2d', and
    * 'kr5.2' was badged as 5.20 kronor beside the year the house was built.
+   *
+   * Text that is only there for assistive technology is kept apart rather than
+   * joined in. bestbuy.com writes the whole price into an sr-only span and the
+   * visible one into three aria-hidden siblings, so a reading that ran the two
+   * together said '$599.99$59999' and found no price at all (#114).
    */
   function pageTextOf(container, node) {
     const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
     let text = '';
     let offset = -1;
     const segments = [];
+    const hidden = [];
     let current = walker.nextNode();
     while (current) {
       const parent = current.parentElement;
       if (!parent || !parent.closest('[' + BADGE_ATTR + ']')) {
-        if (current === node) offset = text.length;
-        segments.push({ node: current, start: text.length, end: text.length + current.nodeValue.length });
-        text += current.nodeValue;
+        if (isScreenReaderOnly(parent)) {
+          hidden.push({ node: current, element: parent });
+        } else {
+          if (current === node) offset = text.length;
+          segments.push({
+            node: current,
+            element: parent,
+            start: text.length,
+            end: text.length + current.nodeValue.length,
+          });
+          text += current.nodeValue;
+          // Over the limit the container is skipped whole, so there is nothing
+          // to gain from reading the rest of it.
+          if (text.length > MAX_GROUP_TEXT) break;
+        }
       }
       current = walker.nextNode();
     }
-    return { text: text, offset: offset, segments: segments };
+    return { text: text, offset: offset, segments: segments, hidden: hidden };
+  }
+
+  /** Digits alone, for telling whether two readings are of the same number. */
+  function digitsOf(text) {
+    return String(text || '').replace(/\D+/g, '');
+  }
+
+  /**
+   * The one price a container carries for screen readers only, or null.
+   *
+   * Amazon writes it into .a-offscreen and bestbuy.com into an sr-only span:
+   * either way it is the whole price, written out once, where the visible markup
+   * has been cut into pieces. Two readings in the hidden text is not a copy of
+   * one price, and neither is none.
+   */
+  function hiddenPriceIn(page) {
+    let found = null;
+    for (let i = 0; i < page.hidden.length; i += 1) {
+      const value = page.hidden[i].node.nodeValue;
+      if (!value || !/\d/.test(value)) continue;
+      const prices = Parser.parsePrices(value, state.context);
+      if (prices.length !== 1 || found) return null;
+      found = prices[0];
+    }
+    return found;
+  }
+
+  // The minor units of a price are written smaller than the rest of it, or
+  // raised the way a footnote is. Two digits, because every currency in the
+  // table that has minor units at all writes two of them, and the zero-decimal
+  // ones are refused outright below.
+  const RAISED = { super: true, top: true, 'text-top': true };
+  const MINOR_RATIO = 0.75;
+  const MINOR_DIGITS = 2;
+
+  function fontSizeOf(element) {
+    const style = element ? window.getComputedStyle(element) : null;
+    const size = style ? parseFloat(style.fontSize) : NaN;
+    return isFinite(size) ? size : NaN;
+  }
+
+  /** True when `element`, or anything between it and the container, is a <sup>. */
+  function insideSuperscript(element, container) {
+    let current = element;
+    while (current && current !== container) {
+      if (current.tagName === 'SUP') return true;
+      current = current.parentElement;
+    }
+    return false;
+  }
+
+  /** True when this run of digits is set as minor units rather than as a number. */
+  function isMinorUnits(tail, integer, container) {
+    if (!tail.element) return false;
+    if (insideSuperscript(tail.element, container)) return true;
+    const style = window.getComputedStyle(tail.element);
+    if (style && RAISED[style.verticalAlign]) return true;
+    const small = fontSizeOf(tail.element);
+    const base = fontSizeOf(integer && integer.element);
+    return isFinite(small) && isFinite(base) && base > 0 && small < MINOR_RATIO * base;
+  }
+
+  /**
+   * The price of an integer and a smaller run of digits beside it: bestbuy.com
+   * sets the cents at 12px next to a 24px '599', so the visible text reads
+   * '$59999'. Null unless the shape is exactly that.
+   *
+   * Everything before the small digits has to read as one whole price and has to
+   * end where they begin, which is what keeps a footnote out: '$599' and '99'
+   * are one price, '$599 ' and a raised '1' are a price and a footnote.
+   */
+  function fractionPrice(page, container) {
+    if (page.segments.length < 2) return null;
+
+    const tail = page.segments[page.segments.length - 1];
+    const digits = tail.node.nodeValue;
+    if (!/^\d+$/.test(digits || '') || digits.length !== MINOR_DIGITS) return null;
+    if (!isMinorUnits(tail, page.segments[page.segments.length - 2], container)) return null;
+
+    const head = page.text.slice(0, tail.start);
+    const prices = Parser.parsePrices(head, state.context);
+    if (prices.length !== 1) return null;
+
+    const price = prices[0];
+    if (head.slice(price.index + price.length) !== '') return null;
+    // A price that already states its minor units has none to take from here.
+    if (price.amount !== Math.round(price.amount)) return null;
+
+    const currency = price.currency ? Currencies.BY_CODE[price.currency] : null;
+    if (!currency || currency.zeroDecimal) return null;
+
+    return Object.assign({}, price, {
+      amount: price.amount + Number(digits) / 100,
+      raw: head.slice(price.index) + currency.decimal + digits,
+      length: page.text.length - price.index,
+    });
+  }
+
+  /**
+   * The price a container states when its visible markup does not state it on
+   * its own. Two shapes, both from the same habit of writing the minor units
+   * smaller than the rest:
+   *
+   *   1. A hidden copy of the whole price beside a visible one cut into pieces.
+   *      The copy decides -- but only when it is the same digits, because a
+   *      different hidden price is a different price and not a copy at all.
+   *   2. No copy, and the last piece is a small or raised run of digits as long
+   *      as the currency's minor units.
+   *
+   * Null when the visible markup already reads as the same price: the ordinary
+   * path then puts the badge beside the price the reader can actually see.
+   */
+  function groupedPrice(page, container) {
+    const hidden = hiddenPriceIn(page);
+    if (hidden && digitsOf(hidden.raw) === digitsOf(page.text)) {
+      const visible = Parser.parsePrices(page.text, state.context);
+      if (visible.length === 1 && visible[0].amount === hidden.amount) return null;
+      return hidden;
+    }
+    return fractionPrice(page, container);
+  }
+
+  /** The container's own child that holds `node`, to place a badge after it. */
+  function childHolding(container, node) {
+    let current = node;
+    while (current && current.parentNode !== container) current = current.parentNode;
+    return current;
+  }
+
+  /**
+   * One badge for a price the container states across several elements. It goes
+   * after the last piece the reader can see -- never inside the hidden copy,
+   * which is the whole of #114 -- and every node that went into the reading is
+   * marked, container included, so a rescan adds nothing.
+   */
+  function badgeGroup(container, page, price) {
+    const last = page.segments[page.segments.length - 1];
+    const anchor = last && childHolding(container, last.node);
+    if (!anchor) return false;
+
+    const badge = priceBadge(price);
+    if (!badge) return false;
+
+    ensureBadgeStyle(container);
+    container.setAttribute(DONE_ATTR, '');
+    container.insertBefore(badge, anchor.nextSibling);
+    page.segments.concat(page.hidden).forEach(function (segment) {
+      processedText.add(segment.node);
+    });
+    return true;
   }
 
   /**
@@ -463,10 +656,16 @@ span[data-worthit-badge] {
    * Shops often break a price across elements, as in
    * <span>1 299</span><span>kr</span>. When a node holds nothing but a number
    * and its parent reads as exactly one price built from that number, the badge
-   * goes on the parent.
+   * goes on the parent -- and when the pieces only read as one price once a
+   * hidden copy or a run of small digits is taken into account, groupedPrice()
+   * says what that price is.
+   *
+   * `split` is false for a node that is already a price in its own right: the
+   * group rules still apply to it, because the piece that carries the minor
+   * units may be the only one missing, but the plain split rule does not.
    */
-  function trySplitPrice(node) {
-    if (!BARE_NUMBER.test(node.nodeValue || '')) return false;
+  function tryContainerPrice(node, split) {
+    const bare = split && BARE_NUMBER.test(node.nodeValue || '');
 
     // The currency sits in a sibling of the number's own wrapper, so the
     // element that reads as a whole price is one or two levels up.
@@ -476,26 +675,35 @@ span[data-worthit-badge] {
 
       const page = pageTextOf(container, node);
       const combined = page.text;
-      if (combined && combined.length <= 200) {
-        const prices = Parser.parsePrices(combined, state.context);
-        // The one price has to be this number's: a bare '1929' in a fact list
-        // that also holds a fee is a year, and the fee has its own badge.
-        if (prices.length === 1 && !spansNode(prices[0], page.offset, node)) return false;
-        if (prices.length === 1 && mergesAnotherPrice(prices[0], page, node)) return false;
-        if (prices.length === 1) {
-          if (isScreenReaderOnly(container)) {
-            processedText.add(node);
-            return false;
-          }
-          const badge = priceBadge(prices[0]);
-          if (!badge) return false;
-          ensureBadgeStyle(container);
-          container.setAttribute(DONE_ATTR, '');
-          container.appendChild(badge);
-          processedText.add(node);
-          return true;
+      if (combined && combined.length <= MAX_GROUP_TEXT) {
+        // One child holding one piece of text has nothing grouped in it, and
+        // the reading below costs a getComputedStyle or a parse.
+        if (page.hidden.length || page.segments.length > 1) {
+          const grouped = groupedPrice(page, container);
+          if (grouped && badgeGroup(container, page, grouped)) return true;
         }
-        if (prices.length > 1) return false;
+
+        if (bare) {
+          const prices = Parser.parsePrices(combined, state.context);
+          // The one price has to be this number's: a bare '1929' in a fact list
+          // that also holds a fee is a year, and the fee has its own badge.
+          if (prices.length === 1 && !spansNode(prices[0], page.offset, node)) return false;
+          if (prices.length === 1 && mergesAnotherPrice(prices[0], page, node)) return false;
+          if (prices.length === 1) {
+            if (isScreenReaderOnly(container)) {
+              processedText.add(node);
+              return false;
+            }
+            const badge = priceBadge(prices[0]);
+            if (!badge) return false;
+            ensureBadgeStyle(container);
+            container.setAttribute(DONE_ATTR, '');
+            container.appendChild(badge);
+            processedText.add(node);
+            return true;
+          }
+          if (prices.length > 1) return false;
+        }
       }
       container = container.parentElement;
     }
@@ -572,6 +780,7 @@ span[data-worthit-badge] {
     touched.forEach((parent) => parent.normalize());
     // And forget that any of it was processed, or the rescan has nothing to do.
     processedText = new WeakSet();
+    hiddenElements = new WeakMap();
   }
 
   // --- dynamic pages ---------------------------------------------------------
@@ -579,6 +788,8 @@ span[data-worthit-badge] {
   function runPendingScan() {
     scanTimer = null;
     lastScanAt = Date.now();
+    // One scan, one set of verdicts about what is hidden.
+    hiddenElements = new WeakMap();
     const roots = pendingRoots;
     pendingRoots = [];
     if (!roots.length) {
