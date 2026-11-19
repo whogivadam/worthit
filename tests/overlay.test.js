@@ -482,6 +482,30 @@ test('a bare number still joins a lone currency beside it', async () => {
   assert.deepEqual(page.labels(), ['7h30m']);
 });
 
+// hemnet.se's listing cards: the price and the living area are neighbouring
+// elements, '123 500 000 kr' beside '530 + 130 m²', and the dot between
+// them is drawn by CSS. Joining the card's text left the currency touching the
+// area, so '123 500 000 kr' was rejected for the digit now following 'kr' and
+// 'kr530' -- 530 kronor -- was badged on the card. A written-out code glues
+// the same way: 'SEK530'.
+test('a bare number does not borrow the currency token beside it', async () => {
+  const card = (price) =>
+    '<article class="card"><a href="/bostad/1"><h2>Roslättsvägen 182-28</h2>' +
+    `<span>Svedala</span><div class="price"><span>${price}</span></div>` +
+    '<div class="area"><span>530</span> + <span>130</span> m²</div></a></article>';
+
+  for (const price of ['123 500 000 kr', '123 500 000 SEK']) {
+    const page = await mount(card(price), null, {
+      url: 'https://www.hemnet.se/bostader?by=price&order=desc',
+    });
+    await page.settle();
+    const badges = page.badges();
+    assert.equal(badges.length, 1, `${price}: ${page.labels().join(' ')}`);
+    assert.match(badges[0].getAttribute('title'), new RegExp(price));
+    assert.equal(badges[0].previousSibling.nodeValue, price);
+  }
+});
+
 test('an unconvertible currency gets an honest question mark', async () => {
   // ZWL is in the currency table but not in this rate cache.
   const page = await mount('<p>Pris 500 ZWL</p>');

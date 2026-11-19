@@ -635,19 +635,22 @@ span[data-worthit-badge] {
   }
 
   /**
-   * True when the price reaches into the digits of another text node that is a
-   * price on its own. Joining the container's text glues neighbouring cells
-   * together: on filmstaden.se the seat number '39' and the cell beside it,
-   * '159.00 kr', read as one price of '39 159.00 kr'. A split price is a bare
-   * number beside its currency, never a number beside another whole price.
+   * True when the price reaches into another text node that is a price on its
+   * own, for its digits or for its currency alike. Joining the container's
+   * text glues neighbouring cells together: on filmstaden.se the seat number
+   * '39' and the cell beside it, '159.00 kr', read as one price of
+   * '39 159.00 kr'; on hemnet.se the living area '530' sits right after
+   * '123 500 000 kr', and 'kr530' read as 530 kronor -- the digit now
+   * following the token even costing the real price its own badge.
+   *
+   * A split price is a bare number beside its currency, never a number that
+   * takes any part of another whole price.
    */
   function mergesAnotherPrice(price, page, node) {
     const start = price.index;
     const end = price.index + price.length;
     return page.segments.some(function (segment) {
       if (segment.node === node || segment.end <= start || segment.start >= end) return false;
-      const overlap = page.text.slice(Math.max(start, segment.start), Math.min(end, segment.end));
-      if (!/\d/.test(overlap)) return false;
       return Parser.parsePrices(segment.node.nodeValue, state.context).length > 0;
     });
   }
