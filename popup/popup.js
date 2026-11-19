@@ -409,8 +409,9 @@
       block.append(inner);
       blocks.append(block);
     });
-    $('overflow').textContent =
-      bar.overflowDays > 0 ? I18n.t('result.overflowDays', { days: bar.overflowDays }) : '';
+    // A key and its numbers, so the label takes the same year form the badge
+    // does once the leftover work passes a work year.
+    $('overflow').textContent = I18n.render(bar.overflow);
   }
 
   function runCheck() {

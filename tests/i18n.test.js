@@ -202,6 +202,53 @@ test('numbers take the decimal separator of the language', () => {
   assert.equal(i18n.formatBadge(20, 40), '2.5d');
 });
 
+// #119. Past one work year the compact form switches to years and days, and
+// every language writes its own unit letters -- French 'j' for a day, German
+// 'T', Japanese and Chinese their own characters.
+test('the year form is written in every language', () => {
+  const year = 40 * 52;
+  const expected = {
+    en: ['1y23d', '2y'],
+    sv: ['1\u00e523d', '2\u00e5'],
+    fr: ['1a23j', '2a'],
+    de: ['1J23T', '2J'],
+    es: ['1a23d', '2a'],
+    'pt-BR': ['1a23d', '2a'],
+    ja: ['1\u5e7423\u65e5', '2\u5e74'],
+    'zh-CN': ['1\u5e7423\u5929', '2\u5e74'],
+    'zh-TW': ['1\u5e7423\u5929', '2\u5e74'],
+  };
+  assert.deepEqual(Object.keys(expected).sort(), [...i18n.LANGUAGES].sort());
+
+  Object.keys(expected).forEach((language) => {
+    i18n.setLanguage(language);
+    assert.equal(i18n.formatBadge(year + 23 * 8, 40), expected[language][0], language);
+    assert.equal(i18n.formatBadge(2 * year, 40), expected[language][1], language);
+    // and below a year the day form is untouched
+    assert.equal(
+      i18n.formatBadge(year - 8, 40),
+      i18n.t('badge.days', { days: 259 }),
+      language
+    );
+  });
+});
+
+test('the framing line and the overflow label say years too', () => {
+  const year = 40 * 52;
+  i18n.setLanguage('en');
+  assert.equal(i18n.render(calc.framing(year + 23 * 8, 40)), '1y23d of your life');
+  assert.equal(i18n.render(calc.framing(2 * year, 40)), '2y of your life');
+  assert.equal(i18n.render(calc.workdayBlocks(year + 8, 40).overflow), '+1y');
+  assert.equal(i18n.render(calc.workdayBlocks(year + 8 + 23 * 8, 40).overflow), '+1y23d');
+  // below a year the spelled-out day label stays
+  assert.equal(i18n.render(calc.workdayBlocks(20, 40).overflow), '+1.5 days');
+
+  i18n.setLanguage('sv');
+  assert.equal(i18n.render(calc.framing(year + 23 * 8, 40)), '1\u00e523d av ditt liv');
+  assert.equal(i18n.render(calc.workdayBlocks(year + 8, 40).overflow), '+1\u00e5');
+  assert.equal(i18n.render(calc.workdayBlocks(20, 40).overflow), '+1,5 dagar');
+});
+
 test('an unknown key degrades to English and then to the key itself', () => {
   i18n.setLanguage('sv');
   assert.equal(i18n.t('framing.halfWorkday'), 'Halva din arbetsdag');
