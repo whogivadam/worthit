@@ -565,8 +565,17 @@ test('a page-backed token wins a number another token also claims', () => {
     parser.parsePrices('fr. 99 kr', SE).map((price) => [price.amount, price.currency]),
     [[99, 'SEK']],
   );
-  // On a Swiss page the franc still wins.
+  // On its own, 'fr. 99' is still "from 99" on a page that names another currency,
+  // whatever the reader's home currency is.
+  assert.equal(parser.parseOne('fr. 99', swiss), null);
+  assert.equal(parser.parseOne('Biljetter fr. 99', SE), null);
+  // On a Swiss page, with a site setting, or with nothing to go on, the franc stays.
   assert.equal(parser.parseOne('Fr. 99', { pageLocale: 'de-CH', tld: 'shop.ch' }).currency, 'CHF');
+  assert.equal(parser.parseOne('Fr. 99', { tld: 'x.se', forcedCurrency: 'CHF' }).currency, 'CHF');
+  assert.equal(parser.parseOne('Fr. 99', { homeCurrency: 'CHF' }).currency, 'CHF');
+  assert.equal(parser.parseOne('Fr. 99', { tld: 'shop.com', homeCurrency: 'CHF' }).currency, 'CHF');
+  // A written ISO code beside it is an explicit qualifier and wins anywhere.
+  assert.equal(parser.parseOne('Fr. 99 (CHF)', SE).currency, 'CHF');
 });
 
 test('zero-decimal currencies never read a trailing group as minor units', () => {
