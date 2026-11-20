@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/whogivadam/worthit/compare/v0.7.0...v0.7.1) (2026-11-20)
+
+
+### Documentation
+
+* **release:** record that Chrome is published by hand ([#131](https://github.com/whogivadam/worthit/issues/131)) ([cf9610a](https://github.com/whogivadam/worthit/commit/cf9610a4ff21a73639d0283e83cffe5f8c84a4e2))
+
 ## [0.7.0](https://github.com/whogivadam/worthit/compare/v0.6.1...v0.7.0) (2026-11-19)
 
 
