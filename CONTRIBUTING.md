@@ -128,7 +128,8 @@ every later step is skipped. Use the **Release** workflow's *Run workflow* butto
 it the existing tag. That path re-runs the tests, the build and both guards against that tag, checks
 the tag matches the version it carries, and submits to both stores again.
 
-**The Chrome submission is non-blocking.** It runs last with `continue-on-error`, so a failure
-there — usually an expired refresh token or a previous version still in review — leaves a published
-release and a zip to upload by hand with `npm run chrome:zip`. See
-[docs/chrome/README.md](docs/chrome/README.md).
+**Chrome is published by hand.** Its refresh token lasts only 7 days, so the workflow's Chrome
+submission is expected to fail; it runs last with `continue-on-error`, leaving a published release
+and one step to finish by hand. Run `npm run chrome:zip`, which puts the release's own zip in
+`web-ext-artifacts/`, and upload that at the developer console. The other cause of a red Chrome
+step is a previous version still in review. See [docs/chrome/README.md](docs/chrome/README.md).
