@@ -506,6 +506,31 @@ test('a bare number does not borrow the currency token beside it', async () => {
   }
 });
 
+// Two bare numbers in neighbouring elements, the currency in a third: the
+// card's text reads '5303 000SEK', of which '303 000SEK' parses -- 303 000
+// kronor, a figure the page never wrote (#128). Neither '530' nor '3 000' is a
+// price on its own, so nothing in the guards against #122 and #127 applies.
+test('two adjacent bare numbers do not join into one glued price', async () => {
+  const page = await mount('<div class="box"><span>530</span><span>3 000</span><span>SEK</span></div>');
+  await page.settle();
+  const titles = page.badges().map((badge) => badge.getAttribute('title'));
+  assert.deepEqual(titles, [], titles.join(' | '));
+  assert.equal(page.document.querySelector('.box').hasAttribute('data-worthit'), false);
+});
+
+// The split price the bare-number rule is there for keeps working, and so does
+// a price whose thousands groups are themselves split across elements: there
+// every digit of every piece goes into the one reading.
+test('a split price whose pieces are read whole still gets its badge', async () => {
+  const whole = await mount('<div class="box"><span>1 299</span><span>kr</span></div>');
+  assert.deepEqual(whole.labels(), ['7h30m']);
+
+  const grouped = await mount('<div class="box"><span>3</span><span>000</span><span>SEK</span></div>');
+  await grouped.settle();
+  assert.equal(grouped.badges().length, 1);
+  assert.match(grouped.badges()[0].getAttribute('title'), /3000/);
+});
+
 test('an unconvertible currency gets an honest question mark', async () => {
   // ZWL is in the currency table but not in this rate cache.
   const page = await mount('<p>Pris 500 ZWL</p>');
