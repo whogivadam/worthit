@@ -656,6 +656,53 @@ span[data-worthit-badge] {
   }
 
   /**
+   * True when the price's span takes part of another text node's digits and
+   * leaves the rest of them outside it.
+   *
+   * Joining the container's text joins the numbers in it too, and two bare
+   * numbers in neighbouring elements become one run of digits that the page
+   * never wrote: '530' beside '3 000' and 'SEK' reads as '5303 000SEK', of
+   * which '303 000SEK' parses -- a price with a digit of the living area at
+   * the front of it (#128). Neither piece is a price on its own, so
+   * mergesAnotherPrice() has nothing to refuse.
+   *
+   * Covering a neighbour's digits whole is how a split price works, and stays
+   * allowed: '<span>3</span><span>000</span><span>SEK</span>' is 3000 SEK.
+   * Covering some of them is always a misreading.
+   */
+  function cutsAnotherNumber(price, page, node) {
+    const start = price.index;
+    const end = price.index + price.length;
+    return page.segments.some(function (segment) {
+      if (segment.node === node) return false;
+      const value = segment.node.nodeValue || '';
+      let inside = false;
+      let outside = false;
+      for (let i = 0; i < value.length; i += 1) {
+        if (!/\d/.test(value[i])) continue;
+        const at = segment.start + i;
+        if (at >= start && at < end) inside = true;
+        else outside = true;
+      }
+      return inside && outside;
+    });
+  }
+
+  /**
+   * One badge for the one price a container states across its elements. The
+   * container is marked, so nothing in it is read a second time.
+   */
+  function badgeContainer(container, node, price) {
+    const badge = priceBadge(price);
+    if (!badge) return false;
+    ensureBadgeStyle(container);
+    container.setAttribute(DONE_ATTR, '');
+    container.appendChild(badge);
+    processedText.add(node);
+    return true;
+  }
+
+  /**
    * Shops often break a price across elements, as in
    * <span>1 299</span><span>kr</span>. When a node holds nothing but a number
    * and its parent reads as exactly one price built from that number, the badge
@@ -688,24 +735,30 @@ span[data-worthit-badge] {
 
         if (bare) {
           const prices = Parser.parsePrices(combined, state.context);
-          // The one price has to be this number's: a bare '1929' in a fact list
-          // that also holds a fee is a year, and the fee has its own badge.
-          if (prices.length === 1 && !spansNode(prices[0], page.offset, node)) return false;
-          if (prices.length === 1 && mergesAnotherPrice(prices[0], page, node)) return false;
-          if (prices.length === 1) {
+          if (prices.length) {
+            // The price has to be this number's, and there has to be just the
+            // one: a bare '1929' in a fact list that also holds a fee is a
+            // year, and the fee has its own badge.
+            const mine = prices.filter(function (price) {
+              return spansNode(price, page.offset, node);
+            });
+            if (mine.length !== 1) return false;
+
+            const price = mine[0];
+            if (mergesAnotherPrice(price, page, node)) return false;
+            if (cutsAnotherNumber(price, page, node)) return false;
             if (isScreenReaderOnly(container)) {
               processedText.add(node);
               return false;
             }
-            const badge = priceBadge(prices[0]);
-            if (!badge) return false;
-            ensureBadgeStyle(container);
-            container.setAttribute(DONE_ATTR, '');
-            container.appendChild(badge);
-            processedText.add(node);
-            return true;
+
+            // One price and nothing else: the container states it whole, so it
+            // carries the badge and is marked as handled. Several prices and
+            // the container is not one price torn across elements at all, so
+            // it may not be badged.
+            if (prices.length === 1) return badgeContainer(container, node, price);
+            return false;
           }
-          if (prices.length > 1) return false;
         }
       }
       container = container.parentElement;
