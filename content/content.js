@@ -689,6 +689,37 @@ span[data-worthit-badge] {
   }
 
   /**
+   * True when every price the container holds but this one is written out
+   * whole inside a single text node of its own, and parses there on its own.
+   *
+   * Those prices are badged by decorateTextNode() where they stand, so a
+   * badge for this piece is the one reading that is missing rather than a
+   * second reading of theirs.
+   */
+  function othersStandAlone(prices, mine, page, node) {
+    return prices.every(function (price) {
+      if (price === mine) return true;
+      const end = price.index + price.length;
+      return page.segments.some(function (segment) {
+        if (segment.node === node) return false;
+        if (segment.start > price.index || segment.end < end) return false;
+        return Parser.parsePrices(segment.node.nodeValue, state.context).some(function (own) {
+          return own.amount === price.amount && own.currency === price.currency;
+        });
+      });
+    });
+  }
+
+  /** The segment of the container's text that holds `offset`, or null. */
+  function segmentAt(page, offset) {
+    for (let i = 0; i < page.segments.length; i += 1) {
+      const segment = page.segments[i];
+      if (segment.start <= offset && offset < segment.end) return segment;
+    }
+    return null;
+  }
+
+  /**
    * One badge for the one price a container states across its elements. The
    * container is marked, so nothing in it is read a second time.
    */
@@ -698,6 +729,26 @@ span[data-worthit-badge] {
     ensureBadgeStyle(container);
     container.setAttribute(DONE_ATTR, '');
     container.appendChild(badge);
+    processedText.add(node);
+    return true;
+  }
+
+  /**
+   * One badge for a price that is only a piece of what the container holds. It
+   * goes after the last element the price reaches into, which is where the
+   * same price in a single text node puts it, and the container is left
+   * unmarked because the prices beside this one are still to be badged.
+   */
+  function badgePiece(container, page, node, price) {
+    const last = segmentAt(page, price.index + price.length - 1);
+    const anchor = last && childHolding(container, last.node);
+    if (!anchor) return false;
+
+    const badge = priceBadge(price);
+    if (!badge) return false;
+
+    ensureBadgeStyle(container);
+    container.insertBefore(badge, anchor.nextSibling);
     processedText.add(node);
     return true;
   }
@@ -753,11 +804,18 @@ span[data-worthit-badge] {
             }
 
             // One price and nothing else: the container states it whole, so it
-            // carries the badge and is marked as handled. Several prices and
-            // the container is not one price torn across elements at all, so
-            // it may not be badged.
+            // carries the badge and is marked as handled.
             if (prices.length === 1) return badgeContainer(container, node, price);
-            return false;
+
+            // Several prices: the container is not one price torn across
+            // elements and may not be badged as a whole. This piece can still
+            // carry the badge it is missing -- a range written
+            // '<span>3 000</span>-<span>5 000 SEK</span>' badges its high end
+            // in that node's own right and left the low end bare (#129) --
+            // but only once every other price is written out whole somewhere
+            // else, where it gets its own badge.
+            if (!othersStandAlone(prices, price, page, node)) return false;
+            return badgePiece(container, page, node, price);
           }
         }
       }
