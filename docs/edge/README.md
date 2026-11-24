@@ -62,7 +62,8 @@ To renew:
 2. `gh secret set EDGE_API_KEY --repo whogivadam/worthit` and paste it.
 3. Re-submit the release that failed: **Actions** → **Release** → *Run workflow*, with its tag.
 
-Check the expiry date before a release rather than after one.
+Check the expiry date before a release rather than after one. **The current key expires on
+3 February 2027**; update this line when you renew it.
 
 ## When the step fails
 
