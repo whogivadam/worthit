@@ -38,8 +38,9 @@ A price is a number until you know what it costs you. Hours are harder to ignore
 
 Requires Firefox 140 or newer, Firefox for Android 142 or newer, Chrome 148 or newer, or Edge 148 or
 newer. One build serves every browser: `manifest.json` declares a background event page for Firefox
-and a service worker for Chrome and Edge, so there is no second manifest. How the Chrome side works
-and is published: [docs/chrome/README.md](docs/chrome/README.md).
+and a service worker for Chrome and Edge, so there is no second manifest. How each store is
+published: [docs/chrome/README.md](docs/chrome/README.md) for Chrome,
+[docs/edge/README.md](docs/edge/README.md) for Edge.
 
 ## Using it
 

@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing tag to submit to AMO, e.g. v0.1.0"
+        description: "Existing tag to submit to the stores, e.g. v0.1.0"
         required: true
         type: string
 
@@ -94,7 +94,7 @@ jobs:
       # fail and the zip is uploaded by hand at the developer console -- that is
       # the standing process for Chrome, not a fallback; the step is kept only
       # because it publishes for free whenever the token happens to be fresh.
-      # It runs last, after the tag, the GitHub release and the AMO submission,
+      # It runs after the tag, the GitHub release and the AMO submission,
       # so failing it would report a release that worked as a release that did
       # not. The summary says what is left to do by hand.
       - name: Submit to the Chrome Web Store
@@ -131,6 +131,47 @@ jobs:
             echo "to AMO -- checks it, and prints the path to upload at"
             echo "<https://chrome.google.com/webstore/devconsole/>. Do not build the"
             echo "zip from the working tree; it is a different artifact."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Microsoft Edge Add-ons. Same zip, same shape as the Chrome step: upload,
+      # submit for review, return; certification arrives by email. Unlike
+      # Chrome, this step is expected to succeed, so a red step means something
+      # to act on -- usually an expired API key or a previous version still in
+      # review. continue-on-error for the same reason
+      # as Chrome: it runs after the release and the other stores, so failing it
+      # would report a release that worked as one that did not. The summary
+      # says what is left to do. See docs/edge/README.md.
+      - name: Submit to Microsoft Edge Add-ons
+        id: edge
+        if: ${{ steps.release.outputs.release_created }}
+        continue-on-error: true
+        env:
+          EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
+          EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
+          EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
+        run: npm run publish:edge
+
+      - name: Say that Edge needs finishing by hand
+        if: ${{ steps.release.outputs.release_created && steps.edge.outcome == 'failure' }}
+        env:
+          TAG: ${{ steps.release.outputs.tag_name }}
+        run: |
+          {
+            echo "### Microsoft Edge Add-ons: submit by hand"
+            echo
+            echo "\`npm run publish:edge\` failed. Two causes are likely: the API"
+            echo "key expired (renew it under Publish API in Partner Center, then"
+            echo "\`gh secret set EDGE_API_KEY\`), or the previous version is still"
+            echo "in review. The log says which. See docs/edge/README.md."
+            echo
+            echo "Everything else in this release succeeded. Either re-run this"
+            echo "tag from the Release workflow's *Run workflow* button once the"
+            echo "cause is fixed, or run"
+            echo
+            echo "    npm run chrome:zip $TAG"
+            echo
+            echo "which fetches this release's zip, and upload it at"
+            echo "<https://partner.microsoft.com/dashboard/microsoftedge/>."
           } >> "$GITHUB_STEP_SUMMARY"
 
   resubmit:
@@ -202,4 +243,30 @@ jobs:
             echo
             echo "Build the zip with \`npm run build\` and upload it at"
             echo "<https://chrome.google.com/webstore/devconsole/>."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Non-blocking for the same reason as the release job above.
+      - name: Submit to Microsoft Edge Add-ons
+        id: edge
+        continue-on-error: true
+        env:
+          EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
+          EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
+          EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
+        run: npm run publish:edge
+
+      - name: Say that Edge needs finishing by hand
+        if: ${{ steps.edge.outcome == 'failure' }}
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          {
+            echo "### Microsoft Edge Add-ons: submit by hand"
+            echo
+            echo "\`npm run publish:edge\` failed for \`$TAG\`. Either the API key"
+            echo "expired or the previous version is still in review. See"
+            echo "docs/edge/README.md."
+            echo
+            echo "Run \`npm run chrome:zip $TAG\` for this release's zip and upload"
+            echo "it at <https://partner.microsoft.com/dashboard/microsoftedge/>."
           } >> "$GITHUB_STEP_SUMMARY"

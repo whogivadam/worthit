@@ -2,8 +2,9 @@
 
 ## Supported versions
 
-The latest version published on addons.mozilla.org and on the Chrome Web Store is the only supported
-version. Chrome can trail by a version while a store review is pending. Fixes ship as new releases;
+The latest version published on addons.mozilla.org, the Chrome Web Store and Microsoft Edge Add-ons
+is the only supported version. Chrome and Edge can trail by a version while a store review is
+pending. Fixes ship as new releases;
 please update before reporting.
 
 ## Reporting a vulnerability
