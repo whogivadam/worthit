@@ -531,6 +531,39 @@ test('a split price whose pieces are read whole still gets its badge', async () 
   assert.match(grouped.badges()[0].getAttribute('title'), /3000/);
 });
 
+// A range split across two elements used to badge its high end only, while the
+// same range in one text node badged both ends (#129).
+test('a range split across elements badges both ends, as one text node does', async () => {
+  const split = await mount('<div class="box"><span>3 000</span>\u2013<span>5 000 SEK</span></div>');
+  await split.settle();
+  assert.deepEqual(split.labels(), ['2.2d', '3.6d']);
+
+  const single = await mount('<div class="box">3 000\u20135 000 SEK</div>');
+  await single.settle();
+  assert.deepEqual(single.labels(), split.labels());
+
+  // The low end's badge goes after the dash, where the single-node form puts
+  // it, and the container holds two prices so it is never badged as a whole.
+  const box = split.document.querySelector('.box');
+  assert.equal(box.hasAttribute('data-worthit'), false);
+  const low = split.badges()[0];
+  assert.equal(low.parentElement, box);
+  assert.equal(low.previousSibling.nodeValue, '\u2013');
+  assert.equal(low.nextSibling.tagName, 'SPAN');
+  assert.equal(low.nextSibling.firstChild.nodeValue, '5 000 SEK');
+});
+
+// Two prices that have nothing to do with each other are not a range, and the
+// bare number beside one of them is not the low end of anything.
+test('a container of two independent prices gets no badge of its own', async () => {
+  const page = await mount(
+    '<div class="box"><span>Pris</span><span>649 kr</span><span>Frakt</span><span>49 kr</span></div>',
+  );
+  await page.settle();
+  assert.deepEqual(page.labels(), ['3h45m', '17m']);
+  assert.equal(page.document.querySelector('.box').hasAttribute('data-worthit'), false);
+});
+
 test('an unconvertible currency gets an honest question mark', async () => {
   // ZWL is in the currency table but not in this rate cache.
   const page = await mount('<p>Pris 500 ZWL</p>');
