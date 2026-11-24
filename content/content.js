@@ -656,6 +656,104 @@ span[data-worthit-badge] {
   }
 
   /**
+   * True when the price's span takes part of another text node's digits and
+   * leaves the rest of them outside it.
+   *
+   * Joining the container's text joins the numbers in it too, and two bare
+   * numbers in neighbouring elements become one run of digits that the page
+   * never wrote: '530' beside '3 000' and 'SEK' reads as '5303 000SEK', of
+   * which '303 000SEK' parses -- a price with a digit of the living area at
+   * the front of it (#128). Neither piece is a price on its own, so
+   * mergesAnotherPrice() has nothing to refuse.
+   *
+   * Covering a neighbour's digits whole is how a split price works, and stays
+   * allowed: '<span>3</span><span>000</span><span>SEK</span>' is 3000 SEK.
+   * Covering some of them is always a misreading.
+   */
+  function cutsAnotherNumber(price, page, node) {
+    const start = price.index;
+    const end = price.index + price.length;
+    return page.segments.some(function (segment) {
+      if (segment.node === node) return false;
+      const value = segment.node.nodeValue || '';
+      let inside = false;
+      let outside = false;
+      for (let i = 0; i < value.length; i += 1) {
+        if (!/\d/.test(value[i])) continue;
+        const at = segment.start + i;
+        if (at >= start && at < end) inside = true;
+        else outside = true;
+      }
+      return inside && outside;
+    });
+  }
+
+  /**
+   * True when every price the container holds but this one is written out
+   * whole inside a single text node of its own, and parses there on its own.
+   *
+   * Those prices are badged by decorateTextNode() where they stand, so a
+   * badge for this piece is the one reading that is missing rather than a
+   * second reading of theirs.
+   */
+  function othersStandAlone(prices, mine, page, node) {
+    return prices.every(function (price) {
+      if (price === mine) return true;
+      const end = price.index + price.length;
+      return page.segments.some(function (segment) {
+        if (segment.node === node) return false;
+        if (segment.start > price.index || segment.end < end) return false;
+        return Parser.parsePrices(segment.node.nodeValue, state.context).some(function (own) {
+          return own.amount === price.amount && own.currency === price.currency;
+        });
+      });
+    });
+  }
+
+  /** The segment of the container's text that holds `offset`, or null. */
+  function segmentAt(page, offset) {
+    for (let i = 0; i < page.segments.length; i += 1) {
+      const segment = page.segments[i];
+      if (segment.start <= offset && offset < segment.end) return segment;
+    }
+    return null;
+  }
+
+  /**
+   * One badge for the one price a container states across its elements. The
+   * container is marked, so nothing in it is read a second time.
+   */
+  function badgeContainer(container, node, price) {
+    const badge = priceBadge(price);
+    if (!badge) return false;
+    ensureBadgeStyle(container);
+    container.setAttribute(DONE_ATTR, '');
+    container.appendChild(badge);
+    processedText.add(node);
+    return true;
+  }
+
+  /**
+   * One badge for a price that is only a piece of what the container holds. It
+   * goes after the last element the price reaches into, which is where the
+   * same price in a single text node puts it, and the container is left
+   * unmarked because the prices beside this one are still to be badged.
+   */
+  function badgePiece(container, page, node, price) {
+    const last = segmentAt(page, price.index + price.length - 1);
+    const anchor = last && childHolding(container, last.node);
+    if (!anchor) return false;
+
+    const badge = priceBadge(price);
+    if (!badge) return false;
+
+    ensureBadgeStyle(container);
+    container.insertBefore(badge, anchor.nextSibling);
+    processedText.add(node);
+    return true;
+  }
+
+  /**
    * Shops often break a price across elements, as in
    * <span>1 299</span><span>kr</span>. When a node holds nothing but a number
    * and its parent reads as exactly one price built from that number, the badge
@@ -688,24 +786,37 @@ span[data-worthit-badge] {
 
         if (bare) {
           const prices = Parser.parsePrices(combined, state.context);
-          // The one price has to be this number's: a bare '1929' in a fact list
-          // that also holds a fee is a year, and the fee has its own badge.
-          if (prices.length === 1 && !spansNode(prices[0], page.offset, node)) return false;
-          if (prices.length === 1 && mergesAnotherPrice(prices[0], page, node)) return false;
-          if (prices.length === 1) {
+          if (prices.length) {
+            // The price has to be this number's, and there has to be just the
+            // one: a bare '1929' in a fact list that also holds a fee is a
+            // year, and the fee has its own badge.
+            const mine = prices.filter(function (price) {
+              return spansNode(price, page.offset, node);
+            });
+            if (mine.length !== 1) return false;
+
+            const price = mine[0];
+            if (mergesAnotherPrice(price, page, node)) return false;
+            if (cutsAnotherNumber(price, page, node)) return false;
             if (isScreenReaderOnly(container)) {
               processedText.add(node);
               return false;
             }
-            const badge = priceBadge(prices[0]);
-            if (!badge) return false;
-            ensureBadgeStyle(container);
-            container.setAttribute(DONE_ATTR, '');
-            container.appendChild(badge);
-            processedText.add(node);
-            return true;
+
+            // One price and nothing else: the container states it whole, so it
+            // carries the badge and is marked as handled.
+            if (prices.length === 1) return badgeContainer(container, node, price);
+
+            // Several prices: the container is not one price torn across
+            // elements and may not be badged as a whole. This piece can still
+            // carry the badge it is missing -- a range written
+            // '<span>3 000</span>-<span>5 000 SEK</span>' badges its high end
+            // in that node's own right and left the low end bare (#129) --
+            // but only once every other price is written out whole somewhere
+            // else, where it gets its own badge.
+            if (!othersStandAlone(prices, price, page, node)) return false;
+            return badgePiece(container, page, node, price);
           }
-          if (prices.length > 1) return false;
         }
       }
       container = container.parentElement;
