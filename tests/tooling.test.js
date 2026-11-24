@@ -53,6 +53,7 @@ test('package.json exposes every script the workflows and docs call', () => {
     'check-privacy',
     'measure-popup',
     'publish:chrome',
+    'publish:edge',
     'chrome:zip',
     'prepare',
   ]) {

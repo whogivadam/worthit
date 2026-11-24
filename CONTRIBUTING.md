@@ -112,10 +112,11 @@ stable.
 
 release-please keeps a release pull request open, writes `CHANGELOG.md` (never edit it by hand) and
 bumps the version in both `package.json` and `manifest.json`. Merging that pull request tags the
-release, attaches the unsigned zip to the GitHub Release and submits the same zip to AMO and to the
-Chrome Web Store for review. Store credentials live only in GitHub Actions secrets —
-`AMO_JWT_ISSUER` and `AMO_JWT_SECRET` for AMO, the five `CHROME_*` secrets listed in
-[docs/chrome/README.md](docs/chrome/README.md) for Chrome — and must never appear in the repository.
+release, attaches the unsigned zip to the GitHub Release and submits the same zip to AMO, the
+Chrome Web Store and Microsoft Edge Add-ons for review. Store credentials live only in GitHub
+Actions secrets — `AMO_JWT_ISSUER` and `AMO_JWT_SECRET` for AMO, the five `CHROME_*` secrets listed
+in [docs/chrome/README.md](docs/chrome/README.md) for Chrome, the three `EDGE_*` secrets listed in
+[docs/edge/README.md](docs/edge/README.md) for Edge — and must never appear in the repository.
 
 The release pull request is created with `GITHUB_TOKEN`, which cannot trigger workflows, so no
 checks ever report on it and branch protection shows it as blocked. Merge it with
@@ -126,10 +127,14 @@ the build and both guards before it signs.
 published, and re-running the job will not help: release-please runs first, sees the release, and
 every later step is skipped. Use the **Release** workflow's *Run workflow* button instead and give
 it the existing tag. That path re-runs the tests, the build and both guards against that tag, checks
-the tag matches the version it carries, and submits to both stores again.
+the tag matches the version it carries, and submits to every store again.
 
 **Chrome is published by hand.** Its refresh token lasts only 7 days, so the workflow's Chrome
-submission is expected to fail; it runs last with `continue-on-error`, leaving a published release
+submission is expected to fail; it runs after AMO with `continue-on-error`, leaving a published release
 and one step to finish by hand. Run `npm run chrome:zip`, which puts the release's own zip in
 `web-ext-artifacts/`, and upload that at the developer console. The other cause of a red Chrome
 step is a previous version still in review. See [docs/chrome/README.md](docs/chrome/README.md).
+
+**Edge is published from CI.** `npm run publish:edge` uploads the zip and submits it, last of all and
+with `continue-on-error`. Its API key expires on the date shown in Partner Center; a red Edge step is
+usually that or a previous version still in review. See [docs/edge/README.md](docs/edge/README.md).
