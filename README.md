@@ -1,7 +1,7 @@
 # Worth It?
 
-A browser extension for Firefox and Chrome that turns any price into the time it costs you: the
-hours of work needed to pay for it, based on your own after-tax income.
+A browser extension for Firefox, Chrome and Edge that turns any price into the time it costs you:
+the hours of work needed to pay for it, based on your own after-tax income.
 
 Prices on a page get a small red badge — `3h45m`, `2.5d` once it passes a working day, or `1y23d`
 once it passes a work year (`hours_per_week * 52` hours) — and the popup lets you check any amount
@@ -23,6 +23,9 @@ A price is a number until you know what it costs you. Hours are harder to ignore
 - **Chrome** — install from the Chrome Web Store:
   <https://chromewebstore.google.com/detail/worth-it/ihfcggecmcnhkblcnjcgpecobbfpbngm>
 
+- **Edge** — install from Microsoft Edge Add-ons:
+  <https://microsoftedge.microsoft.com/addons/detail/worth-it/mmjliacccebkkafagabhdjopffiocoma>
+
 - **Development** — load it from source, no build step needed:
   - *Firefox*: open `about:debugging#/runtime/this-firefox`, choose **Load Temporary Add-on** and
     pick `manifest.json` in the repository root. It is removed when Firefox restarts, and Firefox may
@@ -30,11 +33,13 @@ A price is a number until you know what it costs you. Hours are harder to ignore
   - *Chrome*: open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked** and
     pick the repository root. The background runs as a service worker and is reported *inactive*
     whenever it is idle, which is normal.
+  - *Edge*: open `edge://extensions`, turn on **Developer mode**, choose **Load unpacked** and pick
+    the repository root. It runs the same service worker as Chrome.
 
-Requires Firefox 140 or newer, Firefox for Android 142 or newer, or Chrome 148 or newer. One build
-serves every browser: `manifest.json` declares a background event page for Firefox and a service
-worker for Chrome, so there is no second manifest. How the Chrome side works and is published:
-[docs/chrome/README.md](docs/chrome/README.md).
+Requires Firefox 140 or newer, Firefox for Android 142 or newer, Chrome 148 or newer, or Edge 148 or
+newer. One build serves every browser: `manifest.json` declares a background event page for Firefox
+and a service worker for Chrome and Edge, so there is no second manifest. How the Chrome side works
+and is published: [docs/chrome/README.md](docs/chrome/README.md).
 
 ## Using it
 
