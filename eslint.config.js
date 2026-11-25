@@ -8,6 +8,7 @@ module.exports = [
     ignores: [
       'node_modules/**',
       'web-ext-artifacts/**',
+      'build/**',
       'dist/**',
       'coverage/**',
       'docs/amo/harness/vendor/**',

@@ -13,6 +13,7 @@ export default {
     '.github',
     'node_modules',
     'web-ext-artifacts',
+    'build',
     'dist',
     'coverage',
     '.husky',

@@ -4,7 +4,7 @@
     "description": "Extension name, shown in about:addons and the toolbar. A product name: not translated."
   },
   "extensionDescription": {
-    "message": "Transforma qualquer preço nas horas de trabalho que ele custa para você, no pop-up e ao lado dos preços em qualquer loja.",
+    "message": "Transforma qualquer preço nas horas de trabalho que ele custa para você, em qualquer loja.",
     "description": "One-line description shown in about:addons."
   },
   "actionTitle": {
