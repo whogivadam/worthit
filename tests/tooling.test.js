@@ -675,6 +675,72 @@ test('a failed AMO submission can be retried without a new version', () => {
     'the checks must run before signing');
 });
 
+test('a retry submits only to the stores it was asked for', () => {
+  // What this closes: the retry path exists for a submission that failed after
+  // the release existed, which means the other stores already accepted that
+  // version. It used to submit to all three unconditionally and AMO first, so
+  // `npm run sign` hit an already-signed version, failed, and the job stopped
+  // before reaching the store that actually needed retrying. v0.7.1 had exactly
+  // that shape: AMO fine, Edge failed, no usable retry.
+  const workflow = read('.github/workflows/release-please.yml');
+  const resubmit = workflow.slice(workflow.indexOf('  resubmit:'));
+
+  for (const store of ['amo', 'chrome', 'edge']) {
+    assert.match(
+      workflow,
+      new RegExp(`^      ${store}:\\n\\s+description:`, 'm'),
+      `the dispatch must take an ${store} input`,
+    );
+  }
+  // Nothing goes up unasked: each store defaults to off.
+  assert.equal(
+    (workflow.match(/^\s+default: false$/gm) || []).length,
+    3,
+    'every store input must default to false',
+  );
+
+  // Each submission is gated on its own input.
+  for (const [store, script] of [['chrome', 'publish:chrome'], ['edge', 'publish:edge'], ['amo', 'sign']]) {
+    const step = resubmit.slice(resubmit.indexOf(`npm run ${script}`) - 500, resubmit.indexOf(`npm run ${script}`));
+    assert.match(step, new RegExp(`if: \\$\\{\\{ inputs\\.${store} \\}\\}`), `${script} must be gated on inputs.${store}`);
+  }
+
+  // A dispatch that ticks nothing says so instead of building for no reason.
+  assert.match(resubmit, /!inputs\.amo && !inputs\.chrome && !inputs\.edge/);
+
+  // AMO last: it is the only strict step, so it must not stand in front of the
+  // two non-blocking ones.
+  assert.ok(
+    resubmit.indexOf('npm run sign') > resubmit.indexOf('npm run publish:chrome')
+      && resubmit.indexOf('npm run sign') > resubmit.indexOf('npm run publish:edge'),
+    'AMO must be submitted after Chrome and Edge in the retry path',
+  );
+  // And it stays strict, because it only runs when explicitly asked for.
+  const amoStep = resubmit.slice(resubmit.indexOf('Submit to AMO for review'), resubmit.indexOf('npm run sign'));
+  assert.ok(!/continue-on-error/.test(amoStep), 'a requested AMO failure must still go red');
+});
+
+test('the Edge summaries point at edge:zip, and the Chrome ones at chrome:zip', () => {
+  // chrome:zip and edge:zip are different artifacts: Partner Center rejects the
+  // Chrome zip over background.scripts. Both Edge summaries used to name
+  // chrome:zip, which is how the v0.7.1 hand upload was rejected.
+  const workflow = read('.github/workflows/release-please.yml');
+  for (const block of workflow.split('### ').slice(1)) {
+    const heading = block.split('\n')[0];
+    const body = block.slice(0, block.indexOf('GITHUB_STEP_SUMMARY'));
+    if (/Edge/.test(heading)) {
+      assert.match(body, /npm run edge:zip/, `"${heading}" must name edge:zip`);
+      assert.ok(
+        !/npm run chrome:zip/.test(body),
+        `"${heading}" must not send the reader to chrome:zip`,
+      );
+    }
+    if (/Chrome Web Store/.test(heading)) {
+      assert.match(body, /npm run chrome:zip/, `"${heading}" must name chrome:zip`);
+    }
+  }
+});
+
 test('AMO credentials come only from secrets, and only in the sign steps', () => {
   const workflow = read('.github/workflows/release-please.yml');
   const signSteps = workflow.split('npm run sign').length - 1;
