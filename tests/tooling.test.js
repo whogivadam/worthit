@@ -55,31 +55,68 @@ test('package.json exposes every script the workflows and docs call', () => {
     'publish:chrome',
     'publish:edge',
     'chrome:zip',
+    'edge:zip',
     'prepare',
   ]) {
     assert.equal(typeof pkg.scripts[script], 'string', `missing npm script: ${script}`);
   }
 });
 
+/** A script with its comments stripped: the code is what must not spring a trap. */
+function codeOf(file) {
+  return fs.readFileSync(path.join(root, file), 'utf8').replace(/^\s*\/\/.*$/gm, '');
+}
+
 test('the hand-upload zip is fetched from a release, never built locally', () => {
   // The trap this closes: while a release PR is held, main runs ahead of the tag
   // but manifest.json still carries the released version, so `npm run build`
   // produces a zip named for the old version carrying the next one's code. The
   // zip to upload is the one CI attached to the tag.
-  const script = fs.readFileSync(path.join(root, 'scripts/chrome-zip.mjs'), 'utf8');
-  // Comments explain the trap at length; the code is what must not spring it.
-  const code = script.replace(/^\s*\/\/.*$/gm, '');
-  assert.match(code, /release', 'download'/, 'it must download the release artifact');
+  assert.match(
+    codeOf('scripts/lib/release-zip.mjs'),
+    /release', 'download'/,
+    'it must download the release artifact',
+  );
   // `web-ext-artifacts` is where the download lands, so the test names the
   // three ways a zip could be built instead of the directory it would land in.
-  assert.ok(
-    !/web-ext build|run build|\bnpx\b/.test(code),
-    'it must not build a zip of its own',
-  );
+  // Both store scripts go through the shared module, so all three are checked.
+  for (const file of [
+    'scripts/lib/release-zip.mjs',
+    'scripts/chrome-zip.mjs',
+    'scripts/edge-zip.mjs',
+  ]) {
+    assert.ok(
+      !/web-ext build|run build|\bnpx\b/.test(codeOf(file)),
+      `${file} must not build a zip of its own`,
+    );
+  }
 
   // And the docs point at the command rather than describing the steps.
   const docs = fs.readFileSync(path.join(root, 'docs/chrome/README.md'), 'utf8');
   assert.match(docs, /npm run chrome:zip/);
+});
+
+test('Edge is sent a package with background.scripts removed, and the others are not', () => {
+  // manifest.json carries both background keys on purpose: Firefox MV3 needs
+  // `scripts`, Chrome ignores it, and Edge refuses the pair. Only the Edge
+  // upload may differ -- if this rule leaks into the build, AMO gets a manifest
+  // with no background at all.
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'));
+  assert.ok(manifest.background.scripts, 'manifest.json must keep background.scripts for AMO');
+  assert.ok(manifest.background.service_worker, 'manifest.json must keep service_worker');
+
+  // The rule lives in one module, and both routes to Edge go through it.
+  for (const file of ['scripts/edge-zip.mjs', 'scripts/edge-publish.mjs']) {
+    assert.match(codeOf(file), /edge-package\.mjs/, `${file} must use the shared Edge package rule`);
+  }
+  // Nothing else may strip it: that would change what AMO or Chrome receives.
+  // (`background/` the directory is fine and expected; the keys are not.)
+  for (const file of ['scripts/chrome-zip.mjs', 'scripts/check-zip.mjs', 'scripts/lib/release-zip.mjs']) {
+    assert.ok(
+      !/background\.scripts|service_worker/.test(codeOf(file)),
+      `${file} must not touch the background keys`,
+    );
+  }
 });
 
 test('the test script names files rather than a directory', () => {
