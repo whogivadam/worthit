@@ -92,8 +92,18 @@ test('the hand-upload zip is fetched from a release, never built locally', () =>
   }
 
   // And the docs point at the command rather than describing the steps.
-  const docs = fs.readFileSync(path.join(root, 'docs/chrome/README.md'), 'utf8');
-  assert.match(docs, /npm run chrome:zip/);
+  assert.match(fs.readFileSync(path.join(root, 'docs/chrome/README.md'), 'utf8'), /npm run chrome:zip/);
+
+  // Edge's by-hand route must name its own command: the Chrome zip is a
+  // different artifact, and Partner Center rejects it. The docs used to say
+  // "the same bytes go to every store", which is how a release went wrong.
+  const edge = fs.readFileSync(path.join(root, 'docs/edge/README.md'), 'utf8');
+  assert.match(edge, /npm run edge:zip/, 'the Edge docs must name edge:zip');
+  assert.match(edge, /background\.scripts/, 'the Edge docs must say the key has to go');
+  assert.ok(
+    !/same bytes go to every store/.test(edge),
+    'the Edge docs must not claim every store takes the same zip',
+  );
 });
 
 test('Edge is sent a package with background.scripts removed, and the others are not', () => {
