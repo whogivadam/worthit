@@ -2,6 +2,10 @@
 //
 //   npm run publish:edge          uploads web-ext-artifacts/*.zip
 //
+// What it uploads is that zip with background.scripts removed, which Edge
+// requires and the other stores do not -- see lib/edge-package.mjs. The zip
+// attached to the GitHub Release, and the one AMO signs, are untouched.
+//
 // Uses v1.1 of the Edge Add-ons REST API, which authenticates with an API key
 // and a client ID from Partner Center -> Microsoft Edge -> Publish API:
 //
@@ -26,6 +30,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { EdgePackageError, edgePackage, verifyEdgePackage } from './lib/edge-package.mjs';
 
 export const API = 'https://api.addons.microsoftedge.microsoft.com';
 export const PARTNER_CENTER = 'https://partner.microsoft.com/dashboard/microsoftedge/';
@@ -47,6 +52,9 @@ const EXPLAINED = {
 
 export class EdgeError extends Error {}
 
+/** Both EDGE_PRODUCT_ID and EDGE_CLIENT_ID are GUIDs from Partner Center. */
+const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /** Reads the three credentials, naming every missing one at once. */
 export function readCredentials(env) {
   const names = ['EDGE_PRODUCT_ID', 'EDGE_CLIENT_ID', 'EDGE_API_KEY'];
@@ -54,11 +62,29 @@ export function readCredentials(env) {
   if (missing.length > 0) {
     throw new EdgeError(`missing ${missing.join(', ')} -- see docs/edge/README.md`);
   }
-  return {
+  const credentials = {
     productId: env.EDGE_PRODUCT_ID.trim(),
     clientId: env.EDGE_CLIENT_ID.trim(),
     apiKey: env.EDGE_API_KEY.trim(),
   };
+
+  // Both IDs are GUIDs, and the API rejects a malformed one with a 400 that
+  // names only the header it arrived in. Checking here costs nothing and says
+  // which secret is wrong, instead of spending a release's upload to find out.
+  const guids = [
+    ['EDGE_PRODUCT_ID', credentials.productId, "the extension's Overview page"],
+    ['EDGE_CLIENT_ID', credentials.clientId, 'Publish API'],
+  ];
+  for (const [name, value, where] of guids) {
+    if (!GUID.test(value)) {
+      throw new EdgeError(
+        `${name} is not a GUID -- copy it again from ${where} at ${PARTNER_CENTER} `
+        + 'and see docs/edge/README.md',
+      );
+    }
+  }
+
+  return credentials;
 }
 
 /**
@@ -79,6 +105,13 @@ function httpFailure(step, response, body) {
       `${step}: ${response.status} -- the API key is missing, expired or invalid. `
       + `Create a new key under Publish API at ${PARTNER_CENTER} and run `
       + '`gh secret set EDGE_API_KEY --repo whogivadam/worthit`.' + detail,
+    );
+  }
+  if (response.status === 400) {
+    return new EdgeError(
+      `${step}: 400 -- the store rejected the request itself, not the credentials. `
+      + 'If it names X-ClientID, EDGE_CLIENT_ID is not a GUID; if it lists package '
+      + 'validation errors, the zip is wrong for Edge -- see docs/edge/README.md.' + detail,
     );
   }
   if (response.status === 404) {
@@ -140,10 +173,24 @@ export async function publish(zipPath, credentials, io = {}) {
     );
   }
 
+  // Edge will not take the zip the other stores get: its validator refuses a
+  // manifest carrying both background keys. lib/edge-package.mjs removes the
+  // one it objects to, and nothing else, then checks its own work. The same
+  // module backs `npm run edge:zip`, so the by-hand route cannot drift from
+  // this one.
+  const released = readFile(zipPath);
+  const built = edgePackage(released);
+  if (built.changed) {
+    verifyEdgePackage(released, built.buffer);
+    log(`edge-publish: removed background.scripts for Edge (${built.buffer.length} bytes)`);
+  } else {
+    log('edge-publish: the manifest has no background.scripts; uploading as released');
+  }
+
   log(`edge-publish: uploading ${path.basename(zipPath)}`);
   const upload = await start('upload', `${base}/draft/package`, {
     headers: { 'Content-Type': 'application/zip' },
-    body: readFile(zipPath),
+    body: built.buffer,
   });
   const uploaded = await settle('upload', `${base}/draft/package/operations/${upload}`);
   log(`edge-publish: ${uploaded.message || 'package uploaded'}`);
@@ -177,7 +224,10 @@ async function main() {
     const zip = pickZip(process.argv.slice(2));
     await publish(zip, readCredentials(process.env));
   } catch (error) {
-    console.error(`edge-publish: ${error instanceof EdgeError ? error.message : error.stack}`);
+    // EdgePackageError says what is wrong with the zip; EdgeError what is wrong
+    // with the store or the secrets. Either is a diagnosis, not a crash.
+    const diagnosed = error instanceof EdgeError || error instanceof EdgePackageError;
+    console.error(`edge-publish: ${diagnosed ? error.message : error.stack}`);
     process.exit(1);
   }
 }

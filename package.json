@@ -26,6 +26,7 @@
     "snapshot": "node scripts/build-snapshot.js",
     "check-zip": "node scripts/check-zip.mjs",
     "chrome:zip": "node scripts/chrome-zip.mjs",
+    "edge:zip": "node scripts/edge-zip.mjs",
     "chrome:listing": "node scripts/chrome-listing.js",
     "check-privacy": "node scripts/check-privacy.mjs",
     "measure-popup": "node scripts/measure-popup.mjs",
