@@ -92,8 +92,41 @@ test('the hand-upload zip is fetched from a release, never built locally', () =>
   }
 
   // And the docs point at the command rather than describing the steps.
-  const docs = fs.readFileSync(path.join(root, 'docs/chrome/README.md'), 'utf8');
-  assert.match(docs, /npm run chrome:zip/);
+  assert.match(fs.readFileSync(path.join(root, 'docs/chrome/README.md'), 'utf8'), /npm run chrome:zip/);
+
+  // Edge's by-hand route must name its own command: the Chrome zip is a
+  // different artifact, and Partner Center rejects it. The docs used to say
+  // "the same bytes go to every store", which is how a release went wrong.
+  const edge = fs.readFileSync(path.join(root, 'docs/edge/README.md'), 'utf8');
+  assert.match(edge, /npm run edge:zip/, 'the Edge docs must name edge:zip');
+  assert.match(edge, /background\.scripts/, 'the Edge docs must say the key has to go');
+  assert.ok(
+    !/same bytes go to every store/.test(edge),
+    'the Edge docs must not claim every store takes the same zip',
+  );
+});
+
+test('Edge is sent a package with background.scripts removed, and the others are not', () => {
+  // manifest.json carries both background keys on purpose: Firefox MV3 needs
+  // `scripts`, Chrome ignores it, and Edge refuses the pair. Only the Edge
+  // upload may differ -- if this rule leaks into the build, AMO gets a manifest
+  // with no background at all.
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'));
+  assert.ok(manifest.background.scripts, 'manifest.json must keep background.scripts for AMO');
+  assert.ok(manifest.background.service_worker, 'manifest.json must keep service_worker');
+
+  // The rule lives in one module, and both routes to Edge go through it.
+  for (const file of ['scripts/edge-zip.mjs', 'scripts/edge-publish.mjs']) {
+    assert.match(codeOf(file), /edge-package\.mjs/, `${file} must use the shared Edge package rule`);
+  }
+  // Nothing else may strip it: that would change what AMO or Chrome receives.
+  // (`background/` the directory is fine and expected; the keys are not.)
+  for (const file of ['scripts/chrome-zip.mjs', 'scripts/check-zip.mjs', 'scripts/lib/release-zip.mjs']) {
+    assert.ok(
+      !/background\.scripts|service_worker/.test(codeOf(file)),
+      `${file} must not touch the background keys`,
+    );
+  }
 });
 
 test('Edge is sent a package with background.scripts removed, and the others are not', () => {
