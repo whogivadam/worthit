@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.7.1](https://github.com/whogivadam/worthit/compare/v0.7.0...v0.7.1) (2026-11-25)
+
+
+### Bug Fixes
+
+* **manifest:** keep extensionDescription within Safari's 112-char limit ([#147](https://github.com/whogivadam/worthit/issues/147)) ([619c1bd](https://github.com/whogivadam/worthit/commit/619c1bdc7f5c2b07ba3329a3698f766c9e4a2367)), closes [#145](https://github.com/whogivadam/worthit/issues/145)
+* **overlay:** badge both ends of a range split across elements ([#135](https://github.com/whogivadam/worthit/issues/135)) ([705ab25](https://github.com/whogivadam/worthit/commit/705ab257fb3f11effacb4186b8f84dca09b22d36))
+* **overlay:** refuse a price that cuts a neighbour's digits ([#134](https://github.com/whogivadam/worthit/issues/134)) ([3aeab80](https://github.com/whogivadam/worthit/commit/3aeab803b3b9ad0d876b4cfb8b39e73a6ade1641))
+
+
+### Documentation
+
+* **release:** record that Chrome is published by hand ([#131](https://github.com/whogivadam/worthit/issues/131)) ([cf9610a](https://github.com/whogivadam/worthit/commit/cf9610a4ff21a73639d0283e83cffe5f8c84a4e2))
+* **repo:** add the Microsoft Edge Add-ons listing to the README ([#141](https://github.com/whogivadam/worthit/issues/141)) ([e96045e](https://github.com/whogivadam/worthit/commit/e96045eafdb524f053cdf6dd7f747f45c2e8e1a1))
+
 ## [0.7.0](https://github.com/whogivadam/worthit/compare/v0.6.1...v0.7.0) (2026-11-19)
 
 
