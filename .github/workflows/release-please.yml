@@ -6,12 +6,30 @@ on:
   # Retry path for a submission that failed after the release already existed.
   # Re-running the release job does not help: release-please runs first, sees
   # the release, returns release_created false, and every later step is skipped.
+  #
+  # Pick the stores to retry. Nothing is submitted unless asked for, because a
+  # store that already accepted the version does not want it again: AMO refuses
+  # a version it has already signed, and re-submitting anywhere resets review
+  # state. A failure is almost always one store, so the default is none and the
+  # choice is explicit.
   workflow_dispatch:
     inputs:
       tag:
         description: "Existing tag to submit to the stores, e.g. v0.1.0"
         required: true
         type: string
+      amo:
+        description: "Submit to AMO (fails if that version is already signed)"
+        type: boolean
+        default: false
+      chrome:
+        description: "Submit to the Chrome Web Store"
+        type: boolean
+        default: false
+      edge:
+        description: "Submit to Microsoft Edge Add-ons"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -123,7 +141,8 @@ jobs:
             echo "is in Testing. The log says which. See docs/chrome/README.md."
             echo
             echo "Everything else in this release succeeded: the tag, the GitHub"
-            echo "release and the AMO submission. To finish Chrome, run"
+            echo "release and the AMO submission. Retry Chrome alone from the"
+            echo "*Run workflow* button with **chrome** ticked, or run"
             echo
             echo "    npm run chrome:zip $TAG"
             echo
@@ -159,18 +178,20 @@ jobs:
           {
             echo "### Microsoft Edge Add-ons: submit by hand"
             echo
-            echo "\`npm run publish:edge\` failed. Two causes are likely: the API"
-            echo "key expired (renew it under Publish API in Partner Center, then"
-            echo "\`gh secret set EDGE_API_KEY\`), or the previous version is still"
-            echo "in review. The log says which. See docs/edge/README.md."
+            echo "\`npm run publish:edge\` failed. **The log above says why** --"
+            echo "an expired API key, a malformed secret, a previous version"
+            echo "still in review and a rejected package all land here. See"
+            echo "docs/edge/README.md."
             echo
-            echo "Everything else in this release succeeded. Either re-run this"
-            echo "tag from the Release workflow's *Run workflow* button once the"
-            echo "cause is fixed, or run"
+            echo "Everything else in this release succeeded. Once the cause is"
+            echo "fixed, retry Edge alone: the Release workflow's *Run workflow*"
+            echo "button, tag \`$TAG\`, with **edge** ticked and the others left"
+            echo "clear. Or upload by hand:"
             echo
-            echo "    npm run chrome:zip $TAG"
+            echo "    npm run edge:zip $TAG"
             echo
-            echo "which fetches this release's zip, and upload it at"
+            echo "which builds this release's Edge package -- not \`chrome:zip\`,"
+            echo "which Partner Center rejects -- then upload it at"
             echo "<https://partner.microsoft.com/dashboard/microsoftedge/>."
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -201,6 +222,14 @@ jobs:
           fi
           echo "submitting $version from $TAG"
 
+      # Nothing is submitted unless a store was ticked, so say so rather than
+      # running the whole build to reach no submission at all.
+      - name: Check at least one store was chosen
+        if: ${{ !inputs.amo && !inputs.chrome && !inputs.edge }}
+        run: |
+          echo "::error::Tick at least one store to submit to: amo, chrome or edge."
+          exit 1
+
       - run: npm ci
 
       - run: npm test
@@ -211,15 +240,19 @@ jobs:
 
       - run: npm run check-privacy
 
-      - name: Submit to AMO for review
-        env:
-          WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
-          WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
-        run: npm run sign
+      # Chrome and Edge first, then AMO. AMO is the strict one -- it refuses a
+      # version it has already signed, and a retry is almost always for a
+      # version AMO accepted -- so if it ran first and failed, the job would
+      # stop before reaching the store that actually needed retrying. Running
+      # it last keeps its failure honest without letting it block the others.
+      #
+      # Each store runs only when asked for. That, not the ordering, is what
+      # makes a single-store retry possible.
 
       # Non-blocking for the same reason as the release job above.
       - name: Submit to the Chrome Web Store
         id: chrome
+        if: ${{ inputs.chrome }}
         continue-on-error: true
         env:
           EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
@@ -230,7 +263,7 @@ jobs:
         run: npm run publish:chrome
 
       - name: Say that Chrome needs a zip uploaded by hand
-        if: ${{ steps.chrome.outcome == 'failure' }}
+        if: ${{ inputs.chrome && steps.chrome.outcome == 'failure' }}
         env:
           TAG: ${{ inputs.tag }}
         run: |
@@ -241,13 +274,14 @@ jobs:
             echo "still in review, or the refresh token expired. See"
             echo "docs/chrome/README.md."
             echo
-            echo "Build the zip with \`npm run build\` and upload it at"
-            echo "<https://chrome.google.com/webstore/devconsole/>."
+            echo "Run \`npm run chrome:zip $TAG\` for this release's zip and upload"
+            echo "it at <https://chrome.google.com/webstore/devconsole/>."
           } >> "$GITHUB_STEP_SUMMARY"
 
       # Non-blocking for the same reason as the release job above.
       - name: Submit to Microsoft Edge Add-ons
         id: edge
+        if: ${{ inputs.edge }}
         continue-on-error: true
         env:
           EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
@@ -256,17 +290,26 @@ jobs:
         run: npm run publish:edge
 
       - name: Say that Edge needs finishing by hand
-        if: ${{ steps.edge.outcome == 'failure' }}
+        if: ${{ inputs.edge && steps.edge.outcome == 'failure' }}
         env:
           TAG: ${{ inputs.tag }}
         run: |
           {
             echo "### Microsoft Edge Add-ons: submit by hand"
             echo
-            echo "\`npm run publish:edge\` failed for \`$TAG\`. Either the API key"
-            echo "expired or the previous version is still in review. See"
-            echo "docs/edge/README.md."
+            echo "\`npm run publish:edge\` failed for \`$TAG\`. The log says why."
+            echo "See docs/edge/README.md."
             echo
-            echo "Run \`npm run chrome:zip $TAG\` for this release's zip and upload"
-            echo "it at <https://partner.microsoft.com/dashboard/microsoftedge/>."
+            echo "Run \`npm run edge:zip $TAG\` for this release's Edge package --"
+            echo "not \`chrome:zip\`, which Partner Center rejects -- and upload it"
+            echo "at <https://partner.microsoft.com/dashboard/microsoftedge/>."
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # Last, and deliberately not continue-on-error: it only runs when asked
+      # for, so a failure here is a real one worth going red for.
+      - name: Submit to AMO for review
+        if: ${{ inputs.amo }}
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
+          WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        run: npm run sign

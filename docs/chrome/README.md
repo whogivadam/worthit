@@ -2,7 +2,7 @@
 
 How Worth It? reaches Chrome, and the parts of it that are not automated.
 
-One zip goes to both stores. `manifest.json` declares **both** background keys:
+One zip goes to AMO and Chrome. `manifest.json` declares **both** background keys:
 
 ```json
 "background": {
@@ -14,6 +14,11 @@ One zip goes to both stores. `manifest.json` declares **both** background keys:
 Chrome takes `service_worker` and ignores `scripts` (from Chrome 121); Firefox takes `scripts` and
 starts its event page regardless of `service_worker` (from Firefox 121). No build step, no second
 manifest, no bundler — `npm run build` produces one artifact that installs in both.
+
+Edge is the exception: it runs the same worker as Chrome but its package validator **rejects** the
+two keys together, where Chrome merely warns, so Edge gets this zip with `scripts` removed. See
+[docs/edge/README.md](../edge/README.md) — and do not remove the key from `manifest.json` itself,
+which AMO needs.
 
 **Each browser warns about the other's key, and both are expected.** Neither is an error and neither
 stops the extension loading:
@@ -218,8 +223,10 @@ Repository secrets:
 | `CHROME_PUBLISHER_ID` | your developer account |
 | `CHROME_CLIENT_ID`, `CHROME_CLIENT_SECRET`, `CHROME_REFRESH_TOKEN` | a Google Cloud OAuth client with the Chrome Web Store API enabled |
 
-The `resubmit` workflow path submits an existing tag to both stores, for a release whose submission
-failed after the GitHub release already existed.
+The `resubmit` workflow path submits an existing tag to the stores you tick — AMO, Chrome, Edge —
+for a release whose submission failed after the GitHub release already existed. Tick only the store
+that failed: a store that already accepted the version does not want it again, and re-submitting
+resets review state. To retry Chrome alone, use *Run workflow* with the tag and **chrome** ticked.
 
 ### A version in review blocks the next one
 

@@ -83,10 +83,11 @@ summary that says what to do.
 > reach Edge and reported success. Check the job summary after a release rather than the tick.
 > Tracked in [#148](https://github.com/whogivadam/worthit/issues/148).
 
-Re-running the whole tag from *Run workflow* re-submits to AMO first, which fails once that version
-is already signed, and the job then stops before reaching Edge — so it is not currently a usable
-retry for an Edge-only failure. Upload by hand instead, below. Tracked in
-[#152](https://github.com/whogivadam/worthit/issues/152).
+To retry Edge alone, use *Run workflow* with the tag and **edge** ticked, leaving **amo** and
+**chrome** clear. Each store submits only when asked for, so a retry cannot disturb one that already
+accepted the version — which matters because AMO refuses a version it has already signed, and
+re-submitting anywhere resets review state. Ticking nothing fails the run rather than building for
+no reason.
 
 Repository secrets, all from Partner Center:
 
@@ -109,9 +110,8 @@ To renew:
 
 1. Partner Center → **Microsoft Edge** → **Publish API** → create a new API key, and copy it.
 2. `gh secret set EDGE_API_KEY --repo whogivadam/worthit` and paste it.
-3. Re-submit the release that failed. *Run workflow* with its tag re-submits to AMO first and stops
-   there once that version is signed ([#152](https://github.com/whogivadam/worthit/issues/152)), so
-   for an Edge-only failure upload by hand instead — see [Uploading by hand](#uploading-by-hand).
+3. Re-submit the release that failed: **Actions** → **Release** → *Run workflow*, with its tag and
+   **edge** ticked. Or upload by hand — see [Uploading by hand](#uploading-by-hand).
 
 Check the expiry date before a release rather than after one. **The current key expires on
 3 February 2027**; update this line when you renew it.
