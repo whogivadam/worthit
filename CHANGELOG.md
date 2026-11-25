@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.2](https://github.com/whogivadam/worthit/compare/v0.7.1...v0.7.2) (2026-11-25)
+
+
+### Documentation
+
+* **release:** say that Edge needs background.scripts stripped ([#154](https://github.com/whogivadam/worthit/issues/154)) ([968b0af](https://github.com/whogivadam/worthit/commit/968b0af871ba1f9a6b8b7045a2c9a14f1455d2a7))
+
 ## [0.7.1](https://github.com/whogivadam/worthit/compare/v0.7.0...v0.7.1) (2026-11-25)
 
 
