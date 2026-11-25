@@ -7,3 +7,4 @@ coverage/
 .amo-upload-uuid
 *.log
 .DS_Store
+build/
