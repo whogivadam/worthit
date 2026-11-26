@@ -720,6 +720,41 @@ test('a retry submits only to the stores it was asked for', () => {
   assert.ok(!/continue-on-error/.test(amoStep), 'a requested AMO failure must still go red');
 });
 
+test('a store that needs finishing by hand annotates the run', () => {
+  // continue-on-error reports these steps' conclusion as success whatever
+  // happens, so the step, the job and the whole run stay green -- v0.7.1 failed
+  // to reach Edge and reported success. The run must not be failed (it runs
+  // after the tag, the release and AMO, so failing it would report a release
+  // that worked as one that did not), so an annotation is the signal: it shows
+  // on the run page without opening the logs.
+  const workflow = read('.github/workflows/release-please.yml');
+  const summaries = workflow.split('      - name: Say that').slice(1);
+  assert.equal(summaries.length, 4, 'both jobs must have a Chrome and an Edge summary');
+
+  for (const step of summaries) {
+    const name = step.split('\n')[0].trim();
+    // Edge is expected to succeed, so its failure is an error; Chrome is
+    // expected to fail routinely, so its failure is a warning.
+    const level = /Edge/.test(name) ? 'error' : 'warning';
+    assert.match(
+      step,
+      new RegExp(`::${level} title=`),
+      `"Say that ${name}" must annotate the run with a ::${level}::`,
+    );
+    assert.ok(
+      step.indexOf('::') < step.indexOf('GITHUB_STEP_SUMMARY'),
+      `"Say that ${name}" must annotate as well as write the summary`,
+    );
+  }
+
+  // And the release itself is never failed over a store.
+  for (const store of ['publish:chrome', 'publish:edge']) {
+    const before = workflow.slice(0, workflow.indexOf(`npm run ${store}`));
+    const step = before.slice(before.lastIndexOf('      - name:'));
+    assert.match(step, /continue-on-error: true/, `${store} must stay non-blocking`);
+  }
+});
+
 test('the Edge summaries point at edge:zip, and the Chrome ones at chrome:zip', () => {
   // chrome:zip and edge:zip are different artifacts: Partner Center rejects the
   // Chrome zip over background.scripts. Both Edge summaries used to name

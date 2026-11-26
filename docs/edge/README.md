@@ -78,10 +78,14 @@ The step runs in both the release job and the `resubmit` job, after AMO and Chro
 summary that says what to do.
 
 > **The run still goes green when this step fails.** `continue-on-error` reports the step's
-> conclusion as success, so neither the step, the job nor the workflow turns red — the only signal is
-> that the *Say that Edge needs finishing by hand* step ran at all, and its summary. v0.7.1 failed to
-> reach Edge and reported success. Check the job summary after a release rather than the tick.
-> Tracked in [#148](https://github.com/whogivadam/worthit/issues/148).
+> conclusion as success, so neither the step, the job nor the workflow turns red. That is deliberate:
+> the step runs after the tag, the GitHub release and the AMO submission, so failing it would report
+> a release that worked as one that did not.
+>
+> The signal is therefore an **annotation**, not the tick. A failed Edge submission writes
+> `::error::Microsoft Edge Add-ons` and a failed Chrome one `::warning::Chrome Web Store`, both shown
+> at the top of the run page beside the job summary that says what to do. v0.7.1 failed to reach Edge
+> and reported success with no annotation at all, which is what prompted this.
 
 To retry Edge alone, use *Run workflow* with the tag and **edge** ticked, leaving **amo** and
 **chrome** clear. Each store submits only when asked for, so a retry cannot disturb one that already

@@ -132,6 +132,7 @@ jobs:
         env:
           TAG: ${{ steps.release.outputs.tag_name }}
         run: |
+          echo "::warning title=Chrome Web Store::$TAG was released but not published to Chrome. Upload the zip by hand -- see the summary."
           {
             echo "### Chrome Web Store: upload the zip by hand"
             echo
@@ -152,14 +153,21 @@ jobs:
             echo "zip from the working tree; it is a different artifact."
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # Microsoft Edge Add-ons. Same zip, same shape as the Chrome step: upload,
-      # submit for review, return; certification arrives by email. Unlike
-      # Chrome, this step is expected to succeed, so a red step means something
-      # to act on -- usually an expired API key or a previous version still in
-      # review. continue-on-error for the same reason
-      # as Chrome: it runs after the release and the other stores, so failing it
-      # would report a release that worked as one that did not. The summary
-      # says what is left to do. See docs/edge/README.md.
+      # Microsoft Edge Add-ons. Same shape as the Chrome step: upload, submit for
+      # review, return; certification arrives by email. Not the same zip --
+      # publish:edge derives an Edge package first, because Edge rejects a
+      # manifest carrying both background keys. See scripts/lib/edge-package.mjs.
+      #
+      # Unlike Chrome, this step is expected to succeed, so a failure here is
+      # something to act on. continue-on-error for the same reason as Chrome:
+      # it runs after the release and the other stores, so failing it would
+      # report a release that worked as one that did not.
+      #
+      # That is also why there is no red step to look for -- continue-on-error
+      # reports this step's conclusion as success whatever happens. The signal
+      # is the error annotation and summary the next step writes, which is what
+      # v0.7.1 taught: it failed to reach Edge and reported success. See
+      # docs/edge/README.md.
       - name: Submit to Microsoft Edge Add-ons
         id: edge
         if: ${{ steps.release.outputs.release_created }}
@@ -175,6 +183,7 @@ jobs:
         env:
           TAG: ${{ steps.release.outputs.tag_name }}
         run: |
+          echo "::error title=Microsoft Edge Add-ons::$TAG was released but not submitted to Edge. See the summary for what to do."
           {
             echo "### Microsoft Edge Add-ons: submit by hand"
             echo
@@ -267,6 +276,7 @@ jobs:
         env:
           TAG: ${{ inputs.tag }}
         run: |
+          echo "::warning title=Chrome Web Store::$TAG was released but not published to Chrome. Upload the zip by hand -- see the summary."
           {
             echo "### Chrome Web Store: upload the zip by hand"
             echo
@@ -294,6 +304,7 @@ jobs:
         env:
           TAG: ${{ inputs.tag }}
         run: |
+          echo "::error title=Microsoft Edge Add-ons::$TAG was released but not submitted to Edge. See the summary for what to do."
           {
             echo "### Microsoft Edge Add-ons: submit by hand"
             echo
