@@ -440,7 +440,7 @@
       return;
     }
 
-    $('time').textContent = I18n.formatHoursMinutes(time.totalHours);
+    $('time').textContent = I18n.formatDuration(time.totalHours, state.settings.hoursPerWeek);
     $('framing').textContent = I18n.render(
       Calc.framing(time.totalHours, state.settings.hoursPerWeek)
     );
@@ -487,7 +487,9 @@
 
     $('history-empty').hidden = state.history.length > 0;
     $('total').textContent = state.history.length
-      ? I18n.t('history.total', { time: I18n.formatHoursMinutes(totalHours) })
+      ? I18n.t('history.total', {
+          time: I18n.formatDuration(totalHours, state.settings.hoursPerWeek),
+        })
       : '';
 
     list.replaceChildren();
@@ -675,7 +677,7 @@
       if (!state.lastResult) return;
       const result = state.lastResult;
       const price = `${result.rawInput} ${result.srcCurrency}`;
-      const time = I18n.formatHoursMinutes(result.totalHours);
+      const time = I18n.formatDuration(result.totalHours, state.settings.hoursPerWeek);
       try {
         await navigator.clipboard.writeText(I18n.t('share.clipboard', { price, time }));
         $('share').textContent = I18n.t('result.copied');

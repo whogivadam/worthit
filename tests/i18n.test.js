@@ -652,3 +652,65 @@ test('the Swedish popup still shows flags, codes and symbols in the picker', asy
     'and the blank row is translated'
   );
 });
+
+test('the long duration reads in days and years in every language', () => {
+  // Nine languages, so the table and the plural keys are exercised rather than
+  // just English. 27.5 h is "3 days 3 h", 4000 h is "1 year 240 days".
+  const expected = {
+    en: ['1 day', '3 days 3 h', '1 year', '1 year 240 days'],
+    sv: ['1 dag', '3 dagar 3 tim', '1 år', '1 år 240 dagar'],
+    fr: ['1 jour', '3 jours 3 h', '1 an', '1 an 240 jours'],
+    de: ['1 Tag', '3 Tage 3 Std.', '1 Jahr', '1 Jahr 240 Tage'],
+    es: ['1 día', '3 días 3 h', '1 año', '1 año 240 días'],
+    'pt-BR': ['1 dia', '3 dias 3 h', '1 ano', '1 ano 240 dias'],
+    ja: ['1日', '3日3時間', '1年', '1年240日'],
+    'zh-CN': ['1天', '3天3小时', '1年', '1年240天'],
+    'zh-TW': ['1天', '3天3小時', '1年', '1年240天'],
+  };
+
+  assert.deepEqual(
+    Object.keys(expected).sort(),
+    [...i18n.LANGUAGES].sort(),
+    'every language must be covered here',
+  );
+
+  for (const [language, [day, daysHours, year, yearDays]] of Object.entries(expected)) {
+    i18n.setLanguage(language);
+    assert.equal(i18n.formatDuration(8, 40), day, language);
+    assert.equal(i18n.formatDuration(27.5, 40), daysHours, language);
+    assert.equal(i18n.formatDuration(2080, 40), year, language);
+    assert.equal(i18n.formatDuration(4000, 40), yearDays, language);
+  }
+});
+
+test('the long duration is unchanged below one workday', () => {
+  // The popup's small results must read exactly as they did.
+  for (const language of i18n.LANGUAGES) {
+    i18n.setLanguage(language);
+    for (const hours of [0.5, 3.75, 7.9]) {
+      assert.equal(
+        i18n.formatDuration(hours, 40),
+        i18n.formatHoursMinutes(hours),
+        `${language} at ${hours} h`,
+      );
+    }
+  }
+});
+
+test('a compound duration joins its halves the way the language wants', () => {
+  // CJK take no space between the two halves; the separator is a string like
+  // any other so each table decides.
+  i18n.setLanguage('en');
+  assert.equal(i18n.t('time.compound', { first: 'A', second: 'B' }), 'A B');
+  i18n.setLanguage('ja');
+  assert.equal(i18n.t('time.compound', { first: 'A', second: 'B' }), 'AB');
+});
+
+test('the long duration writes its numbers the way the language does', () => {
+  // 240 days is under a thousand, so take a span that is not: 30 000 h is
+  // 14 years and some days, and Swedish groups with a space.
+  i18n.setLanguage('en');
+  assert.match(i18n.formatDuration(30000, 40), /^14 years /);
+  i18n.setLanguage('sv');
+  assert.match(i18n.formatDuration(30000, 40), /^14 år /);
+});
