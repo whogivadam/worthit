@@ -253,3 +253,74 @@ test('a worked example holds end to end', () => {
   });
   assert.equal(calc.framing(time.totalHours, 40).key, 'framing.wholeWorkday');
 });
+
+test('the long duration switches scale where the badge does', () => {
+  // The bug this covers: the popup's main result read "1234 h 30 min" however
+  // big the number, while the badge beside the same price said "2y14d". Same
+  // thresholds, same hoursPerWeek, so the two can never disagree about scale.
+  const day = { key: 'time.day', days: 1 };
+
+  // Below one workday it is unchanged -- hours and minutes, as before.
+  assert.deepEqual(calc.longDurationParts(0.5, 40), { key: 'time.minutes', minutes: 30 });
+  assert.deepEqual(calc.longDurationParts(3.75, 40), { key: 'time.hoursMinutes', hours: 3, minutes: 45 });
+  assert.deepEqual(calc.longDurationParts(7.99, 40), { key: 'time.hoursMinutes', hours: 7, minutes: 59 });
+
+  // One workday exactly is the switch, the same as badgeParts.
+  assert.deepEqual(calc.longDurationParts(8, 40), day);
+  assert.equal(calc.badgeParts(8, 40).key, 'badge.days');
+
+  // A unit that comes out zero is left off: "1 day", not "1 day 0 h".
+  assert.deepEqual(calc.longDurationParts(8.4, 40), day);
+  assert.deepEqual(calc.longDurationParts(9, 40), {
+    key: 'time.compound',
+    first: day,
+    second: { key: 'time.hours', hours: 1 },
+  });
+
+  // Whole days and the hours left over, rather than the badge's decimal.
+  assert.deepEqual(calc.longDurationParts(27.5, 40), {
+    key: 'time.compound',
+    first: { key: 'time.days', days: 3 },
+    second: { key: 'time.hours', hours: 3 },
+  });
+  assert.deepEqual(calc.badgeParts(27.5, 40), { key: 'badge.days', days: 3.4 });
+
+  // One work year is the second switch, again where the badge has it.
+  assert.deepEqual(calc.longDurationParts(2072, 40), { key: 'time.days', days: 259 });
+  assert.deepEqual(calc.longDurationParts(2080, 40), { key: 'time.year', years: 1 });
+  assert.deepEqual(calc.longDurationParts(2264, 40), {
+    key: 'time.compound',
+    first: { key: 'time.year', years: 1 },
+    second: { key: 'time.days', days: 23 },
+  });
+  assert.deepEqual(calc.longDurationParts(4160, 40), { key: 'time.years', years: 2 });
+
+  // And both switches move with hoursPerWeek.
+  assert.deepEqual(calc.longDurationParts(6, 30), day);
+  assert.deepEqual(calc.longDurationParts(1698, 30), {
+    key: 'time.compound',
+    first: { key: 'time.year', years: 1 },
+    second: { key: 'time.days', days: 23 },
+  });
+});
+
+test('one of anything takes the singular key', () => {
+  // Singular and plural are separate keys because choosing between them is
+  // arithmetic; lib/i18n.js only renders what it is handed.
+  assert.equal(calc.longDurationParts(8, 40).key, 'time.day');
+  assert.equal(calc.longDurationParts(16, 40).key, 'time.days');
+  assert.equal(calc.longDurationParts(2080, 40).key, 'time.year');
+  assert.equal(calc.longDurationParts(4160, 40).key, 'time.years');
+  // Both halves decide independently.
+  const oneAndOne = calc.longDurationParts(2088, 40);
+  assert.equal(oneAndOne.first.key, 'time.year');
+  assert.equal(oneAndOne.second.key, 'time.day');
+});
+
+test('the long duration refuses to guess on unusable input', () => {
+  for (const bad of [NaN, -1, Infinity, null, undefined, 'x']) {
+    assert.deepEqual(calc.longDurationParts(bad, 40), calc.durationParts(bad));
+  }
+  // A missing hoursPerWeek cannot scale, so it stays in hours and minutes.
+  assert.deepEqual(calc.longDurationParts(27.5, 0), { key: 'time.hoursMinutes', hours: 27, minutes: 30 });
+});
