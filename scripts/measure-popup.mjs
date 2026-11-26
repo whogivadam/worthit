@@ -60,6 +60,14 @@ const shipped = Number(widthMatch[1]);
 const widths = [
   { label: `${shipped}px`, width: shipped },
   { label: `${shipped - SCROLLBAR}px (scrollbar)`, width: shipped - SCROLLBAR },
+  // The token still claims the shipped width while the popup is handed less.
+  // That is the shape of #143: Safari narrows the popover on the switch into
+  // Settings, and anything that sized itself from the token rather than from
+  // the width it was actually given is painted outside the popup and clipped,
+  // because an action popup has nowhere to scroll sideways to. The two cases
+  // above cannot catch it -- they move the token, so everything derived from it
+  // moves too.
+  { label: `${shipped - SCROLLBAR}px (squeezed)`, width: shipped, squeeze: shipped - SCROLLBAR },
 ];
 
 const markup = /<body[^>]*>([\s\S]*)<\/body>/
@@ -224,9 +232,27 @@ function preview(query) {
   document.documentElement.setAttribute('data-height', String(documentHeight()));
 }
 
+// The furthest right edge of the laid-out boxes. Paired with the body's own
+// width this says whether anything is painted outside the popup -- clipped,
+// because an action popup has nowhere to scroll sideways to. #143
+function rightEdge() {
+  let edge = 0;
+  const walk = (el) => {
+    const style = getComputedStyle(el);
+    if (style.display === 'none') return;
+    edge = Math.max(edge, el.getBoundingClientRect().right);
+    for (const child of el.children) walk(child);
+  };
+  for (const child of document.body.children) walk(child);
+  return Math.ceil(edge);
+}
+
 function measureAll() {
   for (const widthCase of PLAN.widths) {
     probe.textContent = ':root { --popup-width: ' + widthCase.width + 'px; }';
+    // Clamping html is how the popup is given less room than it asked for;
+    // there is no way to resize the window from inside it.
+    document.documentElement.style.width = widthCase.squeeze ? widthCase.squeeze + 'px' : '';
     for (const language of I18n.LANGUAGES) {
       I18n.setLanguage(language);
       applyTranslations();
@@ -249,6 +275,8 @@ function measureAll() {
           view,
           height,
           bodyScrollHeight: document.body.scrollHeight,
+          bodyClientWidth: document.body.clientWidth,
+          rightEdge: rightEdge(),
           statusLines,
         });
       }
@@ -356,6 +384,15 @@ for (const result of results) {
         ` -- over the ${budget}px budget (${CAP}px cap less ${HEADROOM}px headroom)`
     );
   }
+  // Nothing may be painted outside the popup, at any of the widths: an action
+  // popup has nowhere to scroll sideways to, so an overhang is simply lost. #143
+  if (result.rightEdge > result.bodyClientWidth) {
+    failures.push(
+      `${result.view} reaches ${result.rightEdge}px in ${result.language} at ${result.widthLabel}` +
+        ` -- ${result.rightEdge - result.bodyClientWidth}px outside the ${result.bodyClientWidth}px popup,` +
+        ' which an action popup cannot scroll to'
+    );
+  }
   if (result.statusLines > 1) {
     failures.push(
       `rates.updated wraps onto ${result.statusLines} lines in ${result.language}` +
@@ -370,7 +407,7 @@ const LINE = 20;
 for (const widthCase of widths) {
   for (const view of plan.views) {
     const heights = results
-      .filter((r) => r.width === widthCase.width && r.view === view)
+      .filter((r) => r.widthLabel === widthCase.label && r.view === view)
       .map((r) => r.height);
     const spread = Math.max(...heights) - Math.min(...heights);
     if (spread > LINE) {
@@ -392,7 +429,7 @@ if (process.argv.includes('--json')) {
     for (const language of languages) {
       const cells = plan.views.map((view) => {
         const row = results.find(
-          (r) => r.width === widthCase.width && r.language === language && r.view === view
+          (r) => r.widthLabel === widthCase.label && r.language === language && r.view === view
         );
         const over = MUST_FIT.includes(view) && row.height > budget;
         const wraps = row.statusLines > 1;
