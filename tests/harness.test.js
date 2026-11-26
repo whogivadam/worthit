@@ -32,7 +32,7 @@ const RATES = JSON.parse(read('lib/rates-snapshot.json')).rates;
 // Each page, the currency all its prices are in, and a home currency other than
 // that one, so every badge's tooltip names the rate it converted from.
 const SHOPS = [
-  { file: 'se-shop.html', currency: 'SEK', home: 'SEK' },
+  { file: 'se-shop.html', currency: 'SEK', home: 'USD' },
   { file: 'us-shop.html', currency: 'USD', home: 'SEK' },
   { file: 'de-shop.html', currency: 'EUR', home: 'USD' },
   { file: 'fr-shop.html', currency: 'EUR', home: 'USD' },

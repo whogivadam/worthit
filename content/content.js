@@ -210,10 +210,28 @@ span[data-worthit-badge] {
     return element ? element.getAttribute('content') : null;
   }
 
+  // The page locale is only ever used to resolve an ambiguous currency, and only
+  // its region carries that. `lang` is the better tag in principle and is tried
+  // first, but a bare language is no use here -- `lang="sv"` names no region, so
+  // the ladder never reaches SEK and a Swedish `499:-` falls through to the
+  // first owner of `:-`, which is NOK. A tag that does name a region therefore
+  // wins over one that does not, whatever order they come in.
+  //
+  // Note this is deliberately not the same as guessing a currency from the bare
+  // language: `sv` is not read as SEK here. See LANGUAGE_CURRENCY in
+  // lib/currencies.js, which is for the reader's first-run default, never for
+  // reading a page.
+  function pageLocaleFrom(candidates) {
+    const present = candidates.filter((one) => typeof one === 'string' && one.trim());
+    return present.find((one) => Currencies.currencyForLocale(one)) || present[0] || null;
+  }
+
   function buildContext() {
-    const documentLocale =
-      (document.documentElement && document.documentElement.getAttribute('lang')) ||
-      metaContent('meta[property="og:locale"]');
+    const documentLocale = pageLocaleFrom([
+      document.documentElement && document.documentElement.getAttribute('lang'),
+      metaContent('meta[property="og:locale"]'),
+      metaContent('meta[http-equiv="content-language"]'),
+    ]);
 
     return {
       forcedCurrency: state.site && state.site.forceCurrency ? state.site.forceCurrency : null,
