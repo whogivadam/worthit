@@ -771,6 +771,55 @@ test('the page locale decides an ambiguous symbol', async () => {
   assert.match(title, /1 CAD = /);
 });
 
+test('a lang with no region loses to a tag that has one', async () => {
+  // The bug this covers: se-shop.html says lang="sv" and og:locale="sv_SE".
+  // `lang` used to win outright, `currencyForLocale('sv')` is null, so the
+  // ambiguity ladder never reached SEK -- `499:-` fell through to the first
+  // owner of ':-', which is NOK, and `2 499:99` was refused altogether. Only
+  // the region decides here, and a bare language carries none.
+  const page = await mount(
+    '<p>499:-</p><p>2 499:99</p>',
+    { settings: Object.assign({}, DEFAULT_STORED.settings, { homeCurrency: 'USD' }) },
+    {
+      url: 'http://127.0.0.1:8000/x',
+      lang: 'sv',
+      head: '<meta property="og:locale" content="sv_SE">',
+    },
+  );
+  assert.equal(page.badges().length, 2, 'both Swedish forms should be badged');
+  for (const badge of page.badges()) {
+    assert.match(badge.getAttribute('title'), /1 SEK = /, 'both should read as SEK');
+  }
+});
+
+test('a lang that does name a region still wins', async () => {
+  // The rule is "prefer a tag with a region", not "prefer og:locale": lang is
+  // the better tag whenever it carries one.
+  const page = await mount(
+    '<p>$100</p>',
+    {},
+    {
+      url: 'https://shop.example.com/x',
+      lang: 'en-CA',
+      head: '<meta property="og:locale" content="en_AU">',
+    },
+  );
+  assert.match(page.badges()[0].getAttribute('title'), /1 CAD = /);
+});
+
+test('a bare lang is still not read as a currency on its own', async () => {
+  // `sv` must not become SEK by itself. LANGUAGE_CURRENCY exists for the
+  // reader's first-run default, never for reading a page: a page's lang says
+  // nothing about which currency its prices are in.
+  const page = await mount(
+    '<p>499:-</p>',
+    { settings: Object.assign({}, DEFAULT_STORED.settings, { homeCurrency: 'USD' }) },
+    { url: 'http://127.0.0.1:8000/x', lang: 'sv' },
+  );
+  const title = page.badges()[0] && page.badges()[0].getAttribute('title');
+  assert.ok(!title || !/1 SEK = /.test(title), 'a bare lang="sv" must not resolve to SEK');
+});
+
 test('a product:price:currency meta beats the page locale', async () => {
   const page = await mount(
     '<p>$100</p>',
